@@ -6,8 +6,6 @@ import numpy as np
 from dm_control.mujoco import Physics  # 关键：导入 dm_control 的 Physics 封装
 from dm_control.utils.inverse_kinematics import qpos_from_site_pose  # 关键：导入 IK 函数
 
-from .casadi_ik import Kinematics
-
 
 # --- 笛卡尔轨迹生成器 (使用 dm_control IK 的完整版本) ---
 class CartesianTrajectoryGenerator:
@@ -431,6 +429,8 @@ class CartesianTrajectoryGenerator_pinocchio:
         """加载模型并准备IK计算环境。"""
         print("正在为IK求解器初始化 Pinocchio+CasADi 模型...")
         try:
+            from .casadi_ik import Kinematics
+
             self.ik_solver = Kinematics(self.ee_site_name)
             self.ik_solver.buildFromMJCF(self.arm_model_path)
             print("IK求解器初始化完成。")
