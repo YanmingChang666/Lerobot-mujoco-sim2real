@@ -14,8 +14,9 @@ JOINT_NAMES = [
     "gripper",
 ]
 ZMQ_IP = "127.0.0.1"
-ZMQ_PORT = "5555"
-REAL_ROBOT_PORT = "COM24"
+ZMQ_PORT = "5555"  # commands: subscribed here (target joint degrees)
+STATE_ZMQ_PORT = "5556"  # state: published here (current joint degrees), for ROS2 /joint_states feedback
+REAL_ROBOT_PORT = "/dev/ttyACM0"
 
 
 def main():
@@ -28,6 +29,10 @@ def main():
     socket = context.socket(zmq.SUB)
     socket.connect(f"tcp://{ZMQ_IP}:{ZMQ_PORT}")
     socket.setsockopt_string(zmq.SUBSCRIBE, "")
+
+    print(f"   初始化ZMQ状态发布者, 绑定到 tcp://{ZMQ_IP}:{STATE_ZMQ_PORT}")
+    state_socket = context.socket(zmq.PUB)
+    state_socket.bind(f"tcp://{ZMQ_IP}:{STATE_ZMQ_PORT}")
 
     # ==================== 新增: 初始化 Poller ====================
     # Poller 是ZMQ中用于处理非阻塞IO的核心工具
@@ -74,6 +79,11 @@ def main():
             # 如果没有消息，循环会自然地结束本次迭代，然后开始下一次
             # 这就给了Python解释器处理 KeyboardInterrupt 的机会
 
+            # ==================== 新增: 读取并发布当前关节状态 (供 ROS2 /joint_states 使用) ====================
+            obs = robot.get_observation()
+            state_deg_list = [obs[f"{name}.pos"] for name in JOINT_NAMES]
+            state_socket.send_string(json.dumps(state_deg_list))
+
     except KeyboardInterrupt:
         print("程序被用户中断。")
     except Exception as e:
@@ -85,6 +95,8 @@ def main():
         # a. 关闭 ZMQ
         if not socket.closed:
             socket.close()
+        if not state_socket.closed:
+            state_socket.close()
         if not context.closed:
             context.term()
         print("   ZMQ 已关闭。")

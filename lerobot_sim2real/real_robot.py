@@ -1,6 +1,5 @@
 from lerobot.robots.robot import Robot
-from lerobot.robots.so100_follower.config_so100_follower import SO100FollowerConfig
-from lerobot.robots.so101_follower.config_so101_follower import SO101FollowerConfig
+from lerobot.robots.so_follower.config_so_follower import SO100FollowerConfig, SO101FollowerConfig
 from lerobot.robots.utils import make_robot_from_config
 
 
@@ -28,9 +27,10 @@ def create_real_robot(uid: str = "so100") -> Robot:
         )
     elif uid == "so101":
         robot_config = SO101FollowerConfig(
-            port="COM24",
+            port="/dev/ttyACM0",
             id="so101_follower",
             use_degrees=True,
+            max_relative_target=10.0,  # degrees per step, safety limit against sudden jumps
             # for phone camera users you can use the commented out setting below
             # cameras={
             #     "base_camera": OpenCVCameraConfig(camera_index=1, fps=30, width=640, height=480)
