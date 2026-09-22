@@ -19,12 +19,12 @@ from utility.ZMQ import ZMQCommunicator
 
 # --- 修改后的主仿真类 ---
 joint_offsets = [
-    0,  # - (Motor 1 position: +1.49)
-    0,  # - (Motor 2 position: +7.54)
-    0,  # - (Motor 3 position: +0.7)
-    0,  # - (Motor 4 position: -41.31)
-    0,  # - (Motor 5 position: -0.7)
-    -41.97,  # - (Motor 6 position: +4.48)
+    0,  # shoulder_pan: 2026-09-22 重新 lerobot-calibrate 后, 信任标定零点, 残差判断为人工摆姿态误差而非真实偏移
+    0,  # shoulder_lift
+    0,  # elbow_flex
+    0,  # wrist_flex
+    0,  # wrist_roll
+    0,  # gripper: MPC 不控制这个关节
 ]
 
 
@@ -351,7 +351,7 @@ if __name__ == "__main__":
     EE_SITE_NAME = "gripperframe"  # 你的XML里定义的夹爪中心的 <site>
     NUM_JOINTS = args.u_dim  # 你的机器人关节数量
     use_pinocchio = False
-    idx = 1  # 0 or 1
+    idx = 0  # 0 = X-Y 平面(贴桌面, wide_range 模型已覆盖此范围), 1 = Y-Z 平面(竖直)
 
     config_dict = {
         "suffix": args.suffix,
@@ -361,7 +361,7 @@ if __name__ == "__main__":
         "use_nosie": False,
         "use_payload": 0,  # 0,1,2
         "use_eso": False,
-        "traj_name": "Helix",  # Rectangle, Fig8, FigStar, Heart, Helix, Lissajous
+        "traj_name": "Heart",  # Rectangle, Fig8, FigStar, Heart, Helix, Lissajous
     }
     config = Config(**config_dict)
 

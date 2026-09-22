@@ -16,12 +16,12 @@ from utility.ZMQ import ZMQCommunicator
 
 # --- 修改后的主仿真类 ---
 joint_offsets = [
-    0,  # - (Motor 1 position: +1.49)
-    0,  # - (Motor 2 position: +7.54)
-    0,  # - (Motor 3 position: +0.7)
-    0,  # - (Motor 4 position: -41.31)
-    0,  # - (Motor 5 position: -0.7)
-    -41.97,  # - (Motor 6 position: +4.48)
+    0,  # shoulder_pan: 2026-09-22 重新 lerobot-calibrate 后, 信任标定零点, 残差判断为人工摆姿态误差而非真实偏移
+    0,  # shoulder_lift
+    0,  # elbow_flex
+    0,  # wrist_flex
+    0,  # wrist_roll
+    0,  # gripper: MPC 不控制这个关节
 ]
 
 
@@ -314,7 +314,7 @@ if __name__ == "__main__":
         "method": args.model,
         "use_KEM": True,
         "use_nosie": True,
-        "traj_name": "FigStar",  # 使用Fig8\FigStar轨迹进行测试
+        "traj_name": "Fig8",  # 使用Fig8\FigStar轨迹进行测试
         "use_eso": None,
         "use_payload": None,
     }
@@ -326,7 +326,7 @@ if __name__ == "__main__":
             model_path=MODEL_XML_PATH,
             ee_site_name=EE_SITE_NAME,
             num_joints=NUM_JOINTS,
-            idx=1,
+            idx=0,  # 0 = X-Y 平面(贴桌面画, wide_range 模型已覆盖此范围), 1 = Y-Z 平面(竖直)
             time_horizon=60,
             time_steps_per_sec=10,
         )

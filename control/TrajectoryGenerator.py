@@ -150,7 +150,7 @@ class CartesianTrajectoryGenerator:
             else:  # X-Y平面
                 a = 0.2 * self.traj_scale
                 b = 0.2 * self.traj_scale
-                z = 0.2 * np.ones((len(t_param), 1))
+                z = 0.055 * np.ones((len(t_param), 1))  # 贴近桌面高度, 与 Heart/Rectangle/FigStar 一致
                 x = np.expand_dims(0.3 + 2 * a * np.sin(t_param) * np.cos(t_param) / (1 + np.sin(t_param) ** 2), axis=1)
                 y = np.expand_dims(b * np.cos(t_param) / (1 + np.sin(t_param) ** 2), axis=1)
             xyz_coords = np.concatenate((x, y, z), axis=1)
@@ -277,7 +277,7 @@ class CartesianTrajectoryGenerator:
                 z = np.expand_dims(center_z + val_2, axis=1)
             else:  # X-Y平面
                 center_x, center_y = 0.35, 0.0
-                z = 0.2 * np.ones((len(t_param), 1))
+                z = 0.055 * np.ones((len(t_param), 1))  # 贴近桌面高度, 与 Heart/Rectangle/FigStar 一致
                 x = np.expand_dims(center_x + val_2, axis=1)
                 y = np.expand_dims(center_y + val_1, axis=1)
             xyz_coords = np.concatenate((x, y, z), axis=1)
@@ -347,14 +347,29 @@ class CartesianTrajectoryGenerator:
             raise ValueError(f"未知的轨迹名称: {traj_name}")
 
         print(f"笛卡尔轨迹生成完毕, 共 {len(xyz_coords)} 个点。")
+        joint_angles_trajectory = self._solve_ik_trajectory(xyz_coords, target_orientation)
 
-        # 2. 求解逆运动学，将笛卡尔轨迹转换为关节角度轨迹
+        # 返回生成的所有数据，这些数据将用于后续的控制和可视化
+        return xyz_coords, joint_angles_trajectory, self.time_vector
+
+    def _solve_ik_trajectory(self, xyz_coords: np.ndarray, target_orientation, pinned_qpos: dict | None = None) -> np.ndarray:
+        """
+        对一串笛卡尔坐标点逐点求解逆运动学，返回对应的关节角度轨迹。
+        由 generate() 和 generate_multi_stroke() 共用。
+
+        Args:
+            pinned_qpos: {qpos索引: 固定值(弧度)}，可选。传了的话这些自由度会被锁死
+                (配合调用方把对应关节名从 self.joint_names 里临时去掉，不交给 IK 求解)。
+        """
         print("开始将笛卡尔轨迹转换为关节角度 (使用 dm_control IK)...")
         joint_angles_trajectory = []
 
         # 重置物理状态到home位置，作为第一次IK求解的起点
         with self.physics.reset_context():
             self.physics.data.qpos[:] = np.zeros(self.physics.model.nq)
+            if pinned_qpos:
+                for idx, val in pinned_qpos.items():
+                    self.physics.data.qpos[idx] = val
 
         for i, pos in enumerate(xyz_coords):
             # 保存当前成功解，以备下次失败时使用
@@ -384,9 +399,101 @@ class CartesianTrajectoryGenerator:
                     raise RuntimeError("轨迹的第一个点IK求解失败,请检查目标位置是否在机器人工作空间内。")
 
         print("关节角度轨迹转换完成。")
+        return np.array(joint_angles_trajectory)
 
-        # 返回生成的所有数据，这些数据将用于后续的控制和可视化
-        return xyz_coords, np.array(joint_angles_trajectory), self.time_vector
+    def generate_multi_stroke(
+        self,
+        strokes,
+        center=(0.35, 0.0),
+        write_height=0.055,
+        lift_height=0.12,
+        points_per_stroke_segment=60,
+        lift_transit_points=30,
+        target_orientation=None,
+        fixed_wrist_roll_rad: float | None = None,
+    ):
+        """
+        生成"多笔画"轨迹：每一笔画贴桌面书写，笔画之间抬笔 -> 平移 -> 落笔。
+
+        注意：每个点对应一个仿真控制步 (env.dt = 0.02s, 50Hz)，点数就是播放时长——
+        `points_per_stroke_segment`/`lift_transit_points` 越大，点越密、播放越慢。
+        比如一笔 16cm 长的直线段用 60 个点插值，播放时长是 60*0.02=1.2s，约 13cm/s；
+        想再慢一点/更精细，直接调大这两个参数即可。
+
+        Args:
+            strokes: 笔画列表，每一笔画是一串 (x, y) 二维坐标 (单位: 米，相对于 center 的偏移量)。
+                     例如 [[(-0.08, 0), (0.08, 0)], [(0, -0.08), (0, 0.08)]] 是两笔画的"十"字。
+            center: 笔画坐标的世界系原点偏移 (cx, cy)。
+            write_height: 落笔书写时的 Z 高度 (贴桌面)。
+            lift_height: 抬笔平移时的 Z 高度 (需高于 write_height, 但仍在训练覆盖的关节范围内)。
+            points_per_stroke_segment: 每一笔画内部相邻两点之间插值的点数。
+            lift_transit_points: 抬笔/落笔/平移各阶段插值的点数。
+            target_orientation: 传给 IK 的目标姿态四元数，默认为 None (不约束姿态，与其余轨迹保持一致)。
+            fixed_wrist_roll_rad: 若不为 None，则整条轨迹的 wrist_roll 全程锁死在这个值 (弧度)，
+                                   IK 只用另外 4 个关节去够 XYZ 位置 (运动学一致，不是事后改数值)。
+                                   回归 Home 阶段不受此参数影响，仍然按 Home 关键帧的 wrist_roll 走。
+
+        Returns:
+            (xyz_coords, joint_angle_trajectory, pen_down_mask)
+            pen_down_mask: 与 xyz_coords 等长的布尔数组，True 表示该点处于"落笔书写"阶段，
+                           可用于后续可视化时区分书写轨迹和空中转移轨迹。
+        """
+        cx, cy = center
+        points = []
+        pen_down_mask = []
+        current_xy = None
+
+        for stroke in strokes:
+            stroke = [(cx + p[0], cy + p[1]) for p in stroke]
+            start_xy = stroke[0]
+
+            if current_xy is not None:
+                # 抬笔 (write_height -> lift_height)
+                for z in np.linspace(write_height, lift_height, lift_transit_points):
+                    points.append((current_xy[0], current_xy[1], z))
+                    pen_down_mask.append(False)
+                # 平移 (在 lift_height 高度从上一笔终点移动到下一笔起点)
+                for t in np.linspace(0, 1, lift_transit_points):
+                    x = current_xy[0] + t * (start_xy[0] - current_xy[0])
+                    y = current_xy[1] + t * (start_xy[1] - current_xy[1])
+                    points.append((x, y, lift_height))
+                    pen_down_mask.append(False)
+                # 落笔 (lift_height -> write_height)
+                for z in np.linspace(lift_height, write_height, lift_transit_points):
+                    points.append((start_xy[0], start_xy[1], z))
+                    pen_down_mask.append(False)
+
+            # 沿笔画的各段插值 (贴桌面书写)
+            for seg_start, seg_end in zip(stroke[:-1], stroke[1:]):
+                for t in np.linspace(0, 1, points_per_stroke_segment):
+                    x = seg_start[0] + t * (seg_end[0] - seg_start[0])
+                    y = seg_start[1] + t * (seg_end[1] - seg_start[1])
+                    points.append((x, y, write_height))
+                    pen_down_mask.append(True)
+
+            current_xy = stroke[-1]
+
+        xyz_coords = np.array(points)
+        pen_down_mask = np.array(pen_down_mask)
+        print(f"多笔画轨迹生成完毕, 共 {len(strokes)} 笔, {len(xyz_coords)} 个点 (含 {(~pen_down_mask).sum()} 个抬笔/平移点)。")
+
+        if fixed_wrist_roll_rad is not None:
+            # wrist_roll 是 self.joint_names 第 5 个 (index 4)，临时从 IK 可解关节里去掉，
+            # 只让另外 4 个关节去够 XYZ 位置，wrist_roll 全程锁死。
+            original_joint_names = self.joint_names
+            self.joint_names = original_joint_names[:4]
+            try:
+                joint_angles_trajectory = self._solve_ik_trajectory(
+                    xyz_coords, target_orientation, pinned_qpos={4: fixed_wrist_roll_rad}
+                )
+            finally:
+                self.joint_names = original_joint_names
+        else:
+            joint_angles_trajectory = self._solve_ik_trajectory(xyz_coords, target_orientation)
+
+        # 用等间隔时间向量覆盖 self.time_vector (长度可能与构造函数里预设的不同)
+        self.time_vector = np.linspace(0, self.time_horizon, len(xyz_coords))
+        return xyz_coords, joint_angles_trajectory, pen_down_mask
 
 
 class CartesianTrajectoryGenerator_pinocchio:
