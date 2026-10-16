@@ -1,0 +1,17 @@
+{
+  "source_urdf": "/home/cym/ROS/Arms/agx_arm_sim/agx_arm_description/agx_arm_urdf/piper/urdf/piper_with_gripper_description.urdf",
+  "meshes_sha256": {
+    "base_link.stl": "fd4a3d6d0266205fe3f725f048645be66592c23564db22e08b0807d5569b2c64",
+    "link1.stl": "9ee6e1d67c0241f42a0dbaf5c676d19230375ed078ee1943bb8c4c37ab303d14",
+    "link2.stl": "0d37675b699b643f2e15348de99aed535fac10dc5f09a79b8e4b0acfaf4e0378",
+    "link3.stl": "e8ae51f17c0c7f6d67b753922e2cc269f5e8372a65734f859231639a64fe8fad",
+    "link4.stl": "efa33022976218f246f736a6133494b5d0e5486e8b50b52900c42f285ae85558",
+    "link5.stl": "a1c69d1c7f6f8c60e2c82331c0f444725200ed4053d3e5ec23aa82cb5db5b29f",
+    "link6.stl": "88374973bc3bd9e7389b5853cd6e555af9731c30b658b1ee6f85be34a126cb92",
+    "flange.stl": "f9ce752f93a6598858a779e3d8755a09e466b588efcffc3a1c3953773753a22b",
+    "gripper_base.stl": "0b839dc0bcb7d94e3422c74f6396b54a0441ba4836448ab5586e7f372d1bdbf3",
+    "gripper_link1.stl": "475a7d8db056524d7659fadf5a2c307d62791047b6214d733dfc7846ed1c613d",
+    "gripper_link2.stl": "3f88d534a85e28a33ef7d2061adacbd1d25214aa9325f9e464aad0f9e4b74606"
+  },
+  "assumptions": "standard Piper with fixed 8mm gripper opening, pen TCP 0.18m from link6, ideal gravity compensation, no collision/contact"
+}

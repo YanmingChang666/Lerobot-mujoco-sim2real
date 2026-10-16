@@ -1,3 +1,16 @@
+"""
+"IBKN + UKF" 闭环仿真主实验脚本：训练好的 IBKN(可逆双线性 Koopman)模型
++ MPC + UKF(无迹卡尔曼滤波)，验证在观测噪声下的抗干扰跟踪能力。
+
+整体结构和 DBKN_KESO.py 几乎一致（Test 类的 runBefore/runFunc/runMPC 三段式
+主循环、ZMQ 广播、回归 Home 逻辑都相同），下面只重点注释和 DBKN_KESO.py
+不同的地方；共同逻辑的详细原理说明请参考 DBKN_KESO.py 顶部注释。主要区别：
+- 本文件只做"抗噪声"实验，不涉及负载(payload)和扩张状态观测器(ESO)，
+  所以 runstep() 比 DBKN_KESO.py 里的版本更简单，只有噪声注入 + UKF 更新两步；
+- 状态估计用 MPCController_UKF.get_updated_state()（无迹卡尔曼滤波），
+  而不是 MPCController_KESO 里的 get_updated_state_KF/get_updated_state_ESO。
+"""
+
 import math
 import time
 
@@ -15,6 +28,8 @@ from SOARM101.SOARM101_Env import SOARM101Env
 from utility.ZMQ import ZMQCommunicator
 
 # --- 修改后的主仿真类 ---
+# 含义与用法同 DBKN_KESO.py：仿真零位到真机标定零位的偏移量，每次重新
+# lerobot-calibrate 后都要按 README 流程重新标定。
 joint_offsets = [
     0,  # shoulder_pan: 2026-09-22 重新 lerobot-calibrate 后, 信任标定零点, 残差判断为人工摆姿态误差而非真实偏移
     0,  # shoulder_lift
@@ -31,6 +46,11 @@ def sim_to_real(q_sim_deg, offsets):
 
 
 class Test:
+    """
+    闭环仿真播放器，结构与 DBKN_KESO.Test 相同（MuJoCo 主循环 + MPC + 状态
+    估计 + ZMQ 广播），区别只在 runstep() 里的扰动/状态估计逻辑更简单。
+    """
+
     def __init__(
         self, path, Controller, communicator, cartesian_points, joint_angle_traj, num_joints, draw_num, config
     ):
@@ -90,7 +110,8 @@ class Test:
 
     def runBefore(self):
         """
-        在仿真循环开始前执行一次
+        在仿真循环开始前执行一次：复位到轨迹起点、画参考轨迹红点、
+        发送起始姿态给真机。逻辑同 DBKN_KESO.Test.runBefore。
         """
         # 将机器人复位到轨迹的起始位置
         print(self.traj_index)
@@ -123,7 +144,9 @@ class Test:
 
     def runFunc(self):
         """
-        每一帧都会被调用的函数
+        每一帧都会被调用的函数：主轨迹跟踪 -> 生成回归路径 -> 播放回归 -> 保持
+        Home 四阶段状态机，并在每帧末尾把当前仿真关节角通过 ZMQ 广播出去。
+        逻辑同 DBKN_KESO.Test.runFunc。
         """
         # --- 代码：重力补偿 ---
         # `data.qfrc_bias` 存储了由重力、科里奥利力等产生的偏置力矩。
@@ -218,6 +241,7 @@ class Test:
         # time.sleep(0.01)  # 控制发送频
 
     def runMPC(self):
+        """单步 MPC 控制，逻辑同 DBKN_KESO.Test.runMPC。"""
         # --- 2. MPC 控制计算 ---
         ref_traj_segment = self.state_all_ref[self.traj_index + 1 : self.traj_index + self.H + 1]
         if self.mpc_controller.state_full:
@@ -253,6 +277,11 @@ class Test:
         self.state_tensor = torch.DoubleTensor(s_next).unsqueeze(0)  # (1,8) / (1, 5, 8)
 
     def runstep(self, action, z_last):
+        """
+        把控制量喂给 MuJoCo 步进一步；相比 DBKN_KESO.Test.runstep，这里
+        没有负载(use_payload)注入，也只有一种状态估计方式(UKF)，没有
+        KF/ESO 二选一或叠加的分支，是本文件相对 DBKN_KESO.py 更简单的地方。
+        """
         # config.use_nosie
         target_velocity = action[: self.env.udim]
         self.env.data.ctrl[: self.env.udim] = target_velocity
@@ -277,6 +306,9 @@ class Test:
             # 否则 MuJoCo 的状态（如速度、雅可比矩阵等）将不一致。
             mujoco.mj_forward(self.env.model, self.env.data)
         if self.config.use_KEM:
+            # 用无迹卡尔曼滤波融合"模型预测"和"(带噪声的)观测"，修正后的
+            # 关节角写回仿真状态，验证的正是"噪声注入后 UKF 能否把跟踪误差
+            # 拉回来"这件事。
             self.env.data.qpos[self.env.joint_ids] = self.mpc_controller.get_updated_state(
                 self.env._get_state(), z_last, action
             )
@@ -302,12 +334,15 @@ if __name__ == "__main__":
     # --- 0. 基本配置 ---
     # 示例参数，请替换为您自己的模型信息
     args = Args()
-    args.device = "cpu"
+    args.device = "cpu"  # 同 DBKN_KESO.py：在线 MPC 用 CPU 跑 IPOPT 更合适
     MODEL_XML_PATH = args.xml_path
     EE_SITE_NAME = "gripperframe"  # 你的XML里定义的夹爪中心的 <site>
     NUM_JOINTS = args.u_dim  # 你的机器人关节数量
     use_pinocchio = False
 
+    # 同样是硬编码在这里的实验配置，不读取命令行参数；use_eso/use_payload
+    # 设为 None 只是占位（Config/ConfigGenerator 结果文件名拼接时需要这两个
+    # 字段存在），本文件的 runstep 实际上不会用到它们。
     config_dict = {
         "suffix": args.suffix,
         "env_name": args.env,
@@ -365,7 +400,7 @@ if __name__ == "__main__":
 
     zmq_communicator = ZMQCommunicator("tcp://127.0.0.1:5555")
     model = init_model(args)
-    model.double()
+    model.double()  # 和 CasADi/UKF 的双精度计算保持一致
     load_model_path = args.output_dir + "/best_model.pt"
     model.load_state_dict(torch.load(load_model_path, map_location=torch.device("cpu")))
     MPC_Controller = MPCController_UKF(model, args)

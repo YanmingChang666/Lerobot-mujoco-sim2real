@@ -1,3 +1,18 @@
+"""
+Sim2Real 通信桥的"仿真端"：一个独立于 Koopman/MPC 主流程的轻量脚本，
+用 mujoco_viewer.CustomViewer 打开一个可交互的 MuJoCo 窗口，把当前仿真里
+的控制量(位置或速度)实时通过 ZMQ PUB 广播出去。
+
+和 DBKN_KESO.py / IBKN_UKF.py 的区别：那两个脚本自带完整的"参考轨迹生成 +
+Koopman + MPC"闭环控制逻辑，仿真的运动是算出来的；本脚本本身不产生任何
+控制指令，只是把 MuJoCo 窗口里已有的 data.ctrl（比如通过 mujoco_viewer 的
+交互界面手动拖动、或者外部脚本写入）广播给真机，更像是一个通用的
+"仿真到真机"转发工具/调试脚手架，不依赖任何 Koopman 模型。
+
+对应 README 里 Sim2Real 通信架构图的"仿真端"：
+    so101_mujoco.py (本文件) --ZMQ PUB :5555 (目标角度)--> so101_real.py (真机端)
+"""
+
 import json
 import math
 import os
@@ -10,6 +25,9 @@ import zmq
 # 机器人关节名称（顺序必须与偏移量数组和MuJoCo模型一致）
 JOINT_NAMES = ["shoulder_pan", "shoulder_lift", "elbow_flex", "wrist_flex", "wrist_roll", "gripper"]
 
+# 仿真零位到真机标定零位的偏移量（度），用法与 DBKN_KESO.py 里的 joint_offsets
+# 相同；这里只有最后一个 gripper 关节非零，说明标定时这个关节的零点偏差
+# 比较大，其余关节当时标定得比较准。
 joint_offsets = [
     0,  # - (Motor 1 position: +1.49)
     0,  # - (Motor 2 position: +7.54)
@@ -44,6 +62,8 @@ class ZMQCommunicator:
         """初始化ZMQ上下文和socket"""
         try:
             self.context = zmq.Context()
+            # PUB/SUB 模式：仿真端只管发布，不关心有没有订阅者在线，
+            # 真机端(so101_real.py)随时可以上线/下线订阅，两端解耦。
             self.socket = self.context.socket(zmq.PUB)
             # 使用 self.address 进行绑定
             self.socket.bind(self.address)
@@ -67,7 +87,9 @@ class ZMQCommunicator:
             return
 
         try:
-            # 转换为JSON字符串并发布
+            # 转换为JSON字符串并发布：用文本协议(JSON)而不是二进制序列化，
+            # 牺牲一点带宽/速度换取跨语言/易调试(可以直接用任意 ZMQ 客户端
+            # 订阅打印看到明文数据)。
             json_data = json.dumps(data)
             self.socket.send_string(json_data)
         except zmq.ZMQError as e:
@@ -83,6 +105,12 @@ class ZMQCommunicator:
 
 
 class Test(mujoco_viewer.CustomViewer):
+    """
+    继承自 mujoco_viewer.CustomViewer 的可交互仿真窗口：runFunc 每帧执行，
+    读取当前 data.ctrl（由 MuJoCo 内部物理引擎/用户交互驱动，本文件不主动
+    写入），转换单位后通过 ZMQ 广播，本身不包含任何轨迹规划或控制算法。
+    """
+
     def __init__(self, path, communicator, control_mode):
         super().__init__(path, 1.5, azimuth=135, elevation=-30)
         self.path = path
@@ -96,6 +124,8 @@ class Test(mujoco_viewer.CustomViewer):
         # --- 代码：重力补偿 ---
         # `data.qfrc_bias` 存储了由重力、科里奥利力等产生的偏置力矩。
         # 对于静止或慢速运动的机器人，它主要就是重力力矩
+        # 每帧都主动施加重力补偿力矩，让机械臂在没有主动控制指令时也能
+        # "悬停"而不是因重力下垂，方便手动拖动关节做交互测试。
         self.data.qfrc_applied[:] = self.data.qfrc_bias[:]
         if self.control_mode == "position":
             # 获取仿真中的前6个关节的角度（弧度）
@@ -107,6 +137,8 @@ class Test(mujoco_viewer.CustomViewer):
             # 使用通信器发送数据
             self.communicator.send_data(q_real_target_deg)
         else:
+            # 速度控制模式：直接把控制量当角速度广播，不做零位偏移修正
+            # （偏移量是位置零点的概念，对速度指令没有意义）。
             target_velocities_rad_s = self.data.ctrl[:6].copy()
             target_velocities_deg = [math.degrees(q) for q in target_velocities_rad_s]
             self.communicator.send_data(target_velocities_deg)
@@ -120,6 +152,9 @@ if __name__ == "__main__":
     zmq_communicator = ZMQCommunicator("tcp://127.0.0.1:5555")
     current_script_dir = os.path.dirname(os.path.abspath(__file__))
     project_root = os.path.dirname(current_script_dir)
+    # 位置控制和速度控制用不同的 MuJoCo 场景文件，是因为两者需要在 XML 里
+    # 配置不同类型的 <actuator>（position 类型 vs velocity 类型），
+    # 不能共用同一份场景文件。
     xml_path = os.path.join(
         project_root,
         "SOARM101",

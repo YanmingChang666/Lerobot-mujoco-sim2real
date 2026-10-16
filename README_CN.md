@@ -4,6 +4,10 @@
 
 [English](README.md) | 简体中文
 
+新增 [Piper 六关节汉字书写流程](PIPER/README_CN.md)：带夹爪模型、红绿轨迹对照、
+零位到第一笔上方的 5 秒平滑进场，以及可直接运行的 DBKN + MPC 示例权重。
+训练数据、日志和运行截图保留在本地，不纳入版本管理。
+
 ## ✨ 特性
 
 - 🤖 支持多种 Koopman 网络架构（DKUC、DBKN、IKN、IBKN、Koopformer、KANKoopman）

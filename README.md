@@ -4,6 +4,11 @@ A Koopman-operator-based sim-to-real project for the SO-ARM101 6-DoF robotic arm
 
 English | [简体中文](README_CN.md)
 
+See the [Piper handwriting workflow](PIPER/README_CN.md) for a six-joint arm with
+gripper, reference/actual trajectory overlays, a five-second startup motion,
+and a ready-to-run DBKN + MPC checkpoint. Generated datasets, logs and runtime
+screenshots are kept local.
+
 ## ✨ Features
 
 - 🤖 Multiple Koopman network architectures (DKUC, DBKN, IKN, IBKN, Koopformer, KANKoopman)

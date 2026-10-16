@@ -1,3 +1,16 @@
+"""
+SO-ARM101 的 MuJoCo 仿真环境封装。
+
+这个环境不是用来做强化学习的（虽然继承了 gym.Env、定义了 action_space /
+observation_space），它唯一的用途是给 Koopman 动力学建模“采数据”：
+在关节零位附近施加随机扰动作为初始状态，再喂随机/预设的控制序列，
+记录 (x_t, u_t, x_{t+1}) 三元组，供 SOARM101_DataCollection.py 采集、
+train.py 训练 Koopman 网络时使用。
+
+因此 reward / terminated / truncated 这些 Gym 标准返回值全部是占位的
+固定值 (0.0, False, False)，不代表真的有奖励函数或终止条件。
+"""
+
 import gymnasium as gym
 import mujoco
 import mujoco.viewer
@@ -9,11 +22,15 @@ class SOARM101Env(gym.Env):
     """
     一个专门为Koopman算子训练收集数据的SOARM-101环境。
 
-    状态 x (Observation):
+    状态 x (Observation)：Koopman 建模里的“系统状态”，8 维 = 3(末端位置) + 5(关节角)。
+    把末端笛卡尔位置也塞进状态里，是因为 MPC/轨迹跟踪最终关心的是末端在
+    笛卡尔空间的误差，让 Koopman 模型直接预测末端位置，比训练后再算一次
+    正运动学更贴近下游用途，也让线性/双线性 Koopman 算子能直接对末端位置
+    的演化建模。
     - 5x 关节角度 (rad)
     - 3x 末端执行器位置 (m)
 
-    控制输入 u (Action):
+    控制输入 u (Action)：
     - 5x 关节目标速度 ([-2, 2])
     """
 
@@ -35,7 +52,9 @@ class SOARM101Env(gym.Env):
         except FileNotFoundError:
             raise FileNotFoundError(f"MuJoCo XML 文件未找到: {xml_path}")
 
-        # 计算需要执行多少个物理步骤以达到期望的dt
+        # MuJoCo 物理引擎自身的仿真步长(model.opt.timestep)通常比控制步长(dt)小很多，
+        # 需要用 frame_skip 把多步物理仿真"打包"成一次 Koopman/MPC 控制周期，
+        # 保证采集到的数据步长和实际控制频率一致，模型学到的才是"控制步长下"的动力学。
         self.frame_skip = max(1, int(np.round(dt / self.model.opt.timestep)))
         self.dt = self.model.opt.timestep * self.frame_skip
         print(f"环境控制步长(dt): {self.dt:.4f}s (执行 {self.frame_skip} 个物理步骤)")
@@ -43,6 +62,8 @@ class SOARM101Env(gym.Env):
         self.data = mujoco.MjData(self.model)
 
         # --- 关节和末端执行器定义 ---
+        # 顺序必须和 XML 里的执行器顺序、以及后面 sim2real 端的 joint_offsets 顺序保持一致，
+        # 否则会出现"关节角度对上了但对应错了关节"的隐蔽 bug。
         self.joint_names = ["shoulder_pan", "shoulder_lift", "elbow_flex", "wrist_flex", "wrist_roll"]
         self.joint_ids = [self.model.joint(name).id for name in self.joint_names]
 
@@ -66,13 +87,19 @@ class SOARM101Env(gym.Env):
         if self.render_mode:
             self.viewer = mujoco.viewer.launch_passive(self.model, self.data)
 
+        # reset() 采数据时的"基准姿态"候选池：每次 reset 从这里随机选一个，
+        # 再叠加 perturbation_limits 范围内的随机扰动，得到真正的初始关节角。
+        # 之所以要多个基准姿态(目前只启用了零位一个)，是为了让训练数据覆盖更大的
+        # 工作空间，而不是只在零位附近打转。
         self.initial_poses = [
             np.array([0, 0, 0, 0, 0]),  # 姿态1: 零位
             # np.array([0,-0.33, 0.29 ,0.20, -1.52])  # 姿态2: 另一个特定姿态
         ]
-        # 2. 为每个关节定义独立的扰动范围 [low, high]
-        # 扩大到能覆盖 X-Y 平面(idx=0) 下 Fig8/FigStar/Heart/Rectangle/Lissajous
-        # 五种轨迹所需的关节角范围(留了余量), 用于训练能在桌面画图的模型
+        # 每个关节独立的扰动范围 [low, high]，决定了训练数据在关节空间的覆盖范围。
+        # 这个范围极其关键：Koopman 模型只在训练数据覆盖过的关节角范围内才可靠，
+        # 一旦下游轨迹跟踪(比如贴桌面画 Fig8/Heart)要求的关节角超出这个范围，
+        # 模型会做"外推"，跟踪精度会明显变差(这是 README 里踩过的坑，不是 bug)。
+        # 想让模型支持更大的工作空间，就要扩大这里的范围、重新采集数据、重新训练。
         self.perturbation_limits = np.array(
             [
                 # [-0.3, -1.0, -0.6, -0.6, -0.1],  # 旧版本注释掉的更宽范围
@@ -83,7 +110,7 @@ class SOARM101Env(gym.Env):
         )
 
     def _get_state(self) -> np.ndarray:
-        """获取当前系统的状态 x。"""
+        """获取当前系统的状态 x：拼接末端位置(3)和关节角(5)，顺序固定为 [ee_pos, qpos]。"""
         qpos = self.data.qpos[self.joint_ids].copy()
         # qvel = self.data.qvel[self.joint_ids].copy()
         ee_pos = self.data.site_xpos[self.ee_site_id].copy()
@@ -120,6 +147,8 @@ class SOARM101Env(gym.Env):
                 size=self.udim,
             )
             # 3. 将基础姿态和扰动相加，得到最终的初始关节角度
+            # 这一步就是在给 Koopman 训练数据"撒点"：每次 reset 都从一个不同的
+            # 关节角组合出发，让采集到的 (x, u, x') 轨迹尽量铺满关节空间。
             initial_qpos = base_qpos + perturbation
             initial_qvel = np.zeros(self.udim)
 
@@ -127,6 +156,7 @@ class SOARM101Env(gym.Env):
         self.data.qvel[self.joint_ids] = initial_qvel
 
         # 必须调用 mj_forward 来更新所有派生量 (如 site_xpos)
+        # 只改 qpos/qvel 不会自动重算正运动学，不调用这一步 ee_pos 会还是重置前的旧值。
         mujoco.mj_forward(self.model, self.data)
 
         initial_state = self._get_state()
@@ -156,6 +186,9 @@ class SOARM101Env(gym.Env):
         self.data.ctrl[: self.udim] = target_velocity
 
         # 3. 执行物理模拟
+        # 循环 frame_skip 次单步物理仿真，让"一次 step 调用"对应一个完整的
+        # 控制周期 dt，而不是底层物理引擎的一个仿真步——这正是 __init__ 里
+        # frame_skip 的作用：把细粒度物理仿真聚合成粗粒度的控制/采样步长。
         for _ in range(self.frame_skip):
             mujoco.mj_step(self.model, self.data)
 
@@ -167,6 +200,7 @@ class SOARM101Env(gym.Env):
             self.render()
 
         # 6. 返回标准 Gym 格式，但奖励和 done 信号是固定的
+        # (这不是强化学习环境，reward/terminated/truncated 只是为了兼容 Gym 接口占位)
         return next_state, 0.0, False, False, {}
 
     def render(self):

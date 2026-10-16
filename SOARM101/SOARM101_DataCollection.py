@@ -1,3 +1,21 @@
+"""
+Koopman 训练数据的采集与加载模块。
+
+整体流程：
+1. 用 SOARM101Env 反复 reset + step，喂不同类型的控制信号（random/sin/chirp），
+   把每一步的 (u_t, x_t) 记录成一条条轨迹，攒成 numpy 数组并缓存到磁盘；
+2. 把这些轨迹数组包装成 PyTorch DataLoader，供 train.py 里的训练循环按批次
+   读取序列窗口（Collater 会在取批次时把 [u, x] 拆开）；
+3. 独立运行本文件（__main__ 部分）时，还会额外生成一条笛卡尔轨迹用于快速
+   目视检查数据分布和关节轨迹形状，属于调试用途，不是数据采集主流程的一部分。
+
+三种控制信号类型的用途区分：
+- 'random'：训练/验证/测试都会用，模拟"随机激励"，让 Koopman 模型学到尽量
+  通用的动力学，而不是只适应某一种输入模式。
+- 'sin'/'chirp'：只在生成测试集时使用，用规律的信号（固定频率正弦 / 线性扫频）
+  检验模型对训练时没见过的、结构化输入的泛化能力。
+"""
+
 import math
 import os
 import sys
@@ -9,6 +27,9 @@ from torch.utils.data import DataLoader, TensorDataset
 # os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 from tqdm import tqdm
 
+# 因为本文件既会被 train.py import，也会被直接 `python SOARM101_DataCollection.py`
+# 运行，这里手动把项目根目录塞进 sys.path，保证两种运行方式下 `from args import Args`
+# 之类的绝对导入都能找到模块。
 current_script_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(current_script_dir)
 sys.path.insert(0, project_root)
@@ -19,6 +40,16 @@ from SOARM101.SOARM101_Env import SOARM101Env
 
 
 class Collater:
+    """
+    DataLoader 的 collate_fn：把一批形状为 [steps+1, u_dim+x_dim] 的轨迹张量
+    堆叠成 [batch, steps+1, u_dim+x_dim]，再按最后一维切开成控制量 u 和状态 x。
+
+    之所以要自定义 collate_fn 而不是用 DataLoader 默认拼接，是因为原始数据里
+    u 和 x 是拼在同一个特征维里存储的（见 generate_physics_based_data 的
+    np.concatenate([u, s])），拆分逻辑需要知道 u_dim/x_dim 才能正确切片，
+    并且顺手把结果搬到训练用的 device 上，省得训练循环里每步都做 .to(device)。
+    """
+
     def __init__(self, x_dim: int, u_dim: int, device: str = "cuda"):
         self.x_dim = x_dim
         self.u_dim = u_dim
@@ -31,6 +62,8 @@ class Collater:
         # 将列表中的张量堆叠成一个批次张量
         # 维度：[batch_size, seq_len, features]
         batch_data = torch.stack(batch_data, dim=0)
+        # 特征维的存储顺序固定为 [u(前 u_dim 列), x(后 x_dim 列)]，
+        # 和 generate_physics_based_data 里 np.concatenate([u, s]) 的顺序对应。
         return dict(
             x=batch_data[:, :, self.u_dim : self.u_dim + self.x_dim].to(self.device),
             u=batch_data[:, :, : self.u_dim].to(self.device),
@@ -38,6 +71,15 @@ class Collater:
 
 
 class SineInputGenerator:
+    """
+    生成结构化（非随机）的控制输入序列，专门用来产出 'sin'/'chirp' 类型的测试数据，
+    检验训练好的 Koopman 模型在"规律信号"下的多步预测/跟踪表现。
+
+    每条轨迹(traj_i)在构造时就随机采样好了自己独有的一组频率/幅值/相位，
+    保证同一批测试轨迹之间彼此不同，但同一条轨迹在整个时间序列里参数是固定的
+    （chirp 模式下频率会随时间线性变化，见 __call__）。
+    """
+
     def __init__(self, traj_num, udim=5, freq_range=(0.01, 0.05), amp_range=(0.05, 0.15), sine_mask=None, mode="sin"):
         """
         初始化每条轨迹的正弦参数：
@@ -52,6 +94,8 @@ class SineInputGenerator:
         self.freq_start = freq_range[0]
         self.freq_end = freq_range[1]
 
+        # 一次性为所有轨迹、所有控制维度采样好频率/幅值/初相，
+        # 后面 __call__ 只是按 (traj_i, t) 查表 + 算 sin，不再引入新的随机性。
         self.freq_table = np.random.uniform(freq_range[0], freq_range[1], size=(traj_num, udim))
         self.amp_table = np.random.uniform(amp_range[0], amp_range[1], size=(traj_num, udim))
         self.phase_table = np.random.uniform(0, 2 * np.pi, size=(traj_num, udim))
@@ -62,12 +106,15 @@ class SineInputGenerator:
             self.sine_mask = sine_mask.astype(bool)
 
     def __call__(self, t, traj_i, T_total=200):
+        """按时间步 t 和轨迹编号 traj_i 计算当前控制输入 u(t)，shape=(udim,)。"""
         if self.mode == "sin":
+            # 固定频率：整条轨迹里 freq 不随 t 变化
             freq = self.freq_table[traj_i]
         elif self.mode == "chirp":
             # 时间归一化因子
             ratio = t / T_total
-            # 线性扫频：从 freq_start 到 freq_end
+            # 线性扫频：从 freq_start 到 freq_end，让测试信号覆盖更宽的频段，
+            # 比单一固定频率的 'sin' 更能暴露模型在不同响应速度下的预测误差。
             freq = self.freq_table[traj_i] + (self.freq_end - self.freq_start) * ratio
             # freq = np.full(self.udim, freq)
 
@@ -77,6 +124,8 @@ class SineInputGenerator:
 
         u = np.zeros(self.udim)
         sine_values = amp * np.sin(2 * np.pi * freq * t + phase)
+        # 只有 mask=True 的控制维度真正被赋值为正弦信号，其余维度保持 0，
+        # 用来支持"只激励部分关节"的测试场景。
         u[mask] = sine_values[mask]
         return u
 
@@ -85,6 +134,11 @@ class SineInputGenerator:
 
 
 class SOARM101DataGenerator:
+    """
+    数据采集与数据加载的总入口：负责驱动 MuJoCo 环境滚动仿真、把结果落盘/读缓存，
+    并封装成 train.py 直接可用的 DataLoader。
+    """
+
     def __init__(self, args: Args) -> None:
         self.args = args
         self.udim = self.args.u_dim  # 控制维度
@@ -113,11 +167,14 @@ class SOARM101DataGenerator:
 
         for traj_i in tqdm(range(traj_num), desc=f"Generating '{input_type}' data"):
             # 1. 重置环境以获得初始状态
+            # 每条轨迹都独立 reset：初始关节角在 SOARM101Env.perturbation_limits
+            # 范围内随机采样，保证不同轨迹覆盖不同的起始区域。
             s0, _ = self.env.reset()
             # 2. 生成初始控制输入 u_0
             if input_type in {"sin", "chirp"}:
                 u0 = generator(0, traj_i)
             else:  # 'random'
+                # 均匀分布采样在 [-0.5, 0.5] 范围内的随机控制量，作为"随机激励"信号
                 u0 = (np.random.rand(self.udim) - 0.5) * 2 * 0.5
 
             # 3. 存储初始数据点 (t=0)
@@ -129,6 +186,8 @@ class SOARM101DataGenerator:
                 u_prev = data_array[traj_i, i - 1, : self.udim]
 
                 # b. 将 u_{i-1} 应用到环境中，得到真实的下一状态 s_i
+                # 这一步是 Koopman 训练样本 (x_i-1, u_i-1) -> x_i 里 "x_i" 的来源：
+                # 用真实物理仿真而不是模型预测，保证标签是准确的。
                 s_next, _, _, _, _ = self.env.step(u_prev)
 
                 # c. 生成当前的控制输入 u_i
@@ -153,6 +212,9 @@ class SOARM101DataGenerator:
         test_samples, test_steps = self.args.test_samples, self.args.test_steps
         train_samples, train_steps = self.args.train_samples, self.args.train_steps
 
+        # 训练/验证/测试数据都做了"文件名里带样本数+步数"的缓存：只要这两个超参
+        # 没变，重复运行 train.py 不会重新跑仿真采集，直接复用磁盘上的 .npy。
+        # 想让新的 perturbation_limits 生效，必须换新的样本数/步数或手动删缓存文件。
         if os.path.exists(train_data_path):
             self.train_data = np.load(train_data_path)
         else:
@@ -172,7 +234,8 @@ class SOARM101DataGenerator:
             print(f"验证数据保存到: {val_data_path}, 形状: {self.val_data.shape}")
 
         self.test_data_dict = {}
-        # 生成测试数据 (三种类型)
+        # 生成测试数据 (三种类型)：random 用来看常规多步预测误差，
+        # sin/chirp 用来专门检验模型对结构化输入的泛化/跟踪能力。
         for test_type in ["random", "sin", "chirp"]:
             test_data_path = os.path.join(
                 project_root,
@@ -192,6 +255,7 @@ class SOARM101DataGenerator:
         self.env.close()
 
     def get_train_loader(self):
+        """把缓存/新生成的训练、验证 numpy 数组包装成 DataLoader，交给 train.py 使用。"""
         train_data_tensor = torch.tensor(self.train_data, dtype=torch.float32)
         train_dataset = TensorDataset(train_data_tensor)
         train_loader = DataLoader(
@@ -207,6 +271,7 @@ class SOARM101DataGenerator:
         return train_loader, val_loader
 
     def get_test_loader(self, test_type):
+        """按类型（random/sin/chirp）取出对应测试集并包装成 DataLoader。"""
         test_data = self.test_data_dict[test_type]
         test_data_tensor = torch.tensor(test_data, dtype=torch.float32)
         test_dataset = TensorDataset(test_data_tensor)
@@ -239,6 +304,8 @@ def visualize_3d_trajectory(data_generator, cartesian_points, traj_type="train")
         print(f"无效的轨迹类型: {traj_type}")
         return
 
+    # 只取每条轨迹的第 0 个时间步 (t=0)，画出的是"所有轨迹初始末端位置"的
+    # 散点分布，用来直观检查 reset() 的随机扰动是否把工作空间覆盖得足够均匀。
     reshaped_data = data_array[:, 0, :]
 
     # 2. 提取 X, Y, Z 坐标
@@ -256,7 +323,8 @@ def visualize_3d_trajectory(data_generator, cartesian_points, traj_type="train")
     scatter = ax.scatter(X, Y, Z, c=Z, cmap="viridis", s=0.1, alpha=1.0)
     # 添加颜色条（Color Bar），显示 Z 坐标的映射
     fig.colorbar(scatter, ax=ax, label="Z Position")
-    # 绘制轨迹
+    # 绘制轨迹（对比：叠加显示 MPC 要跟踪的参考笛卡尔轨迹，
+    # 和上面训练数据初始点云的分布范围是否匹配）
     ax.plot(cartesian_points[:, 0], cartesian_points[:, 1], cartesian_points[:, 2])
     # 设置坐标轴标签
     ax.set_xlabel("X (m)")
@@ -267,6 +335,10 @@ def visualize_3d_trajectory(data_generator, cartesian_points, traj_type="train")
 
 
 # --- 主数据收集脚本 ---
+# 下面这部分只在直接运行 `python SOARM101_DataCollection.py` 时执行，
+# 用途是：(1) 触发一次完整的数据生成/缓存加载；(2) 顺带生成一条参考笛卡尔轨迹，
+# 把训练数据点云和这条轨迹画在一起，快速用肉眼检查数据覆盖范围是否够用。
+# 正常训练流程走的是 train.py，不会执行到这里。
 if __name__ == "__main__":
     from control.TrajectoryGenerator import CartesianTrajectoryGenerator, CartesianTrajectoryGenerator_pinocchio
 
@@ -289,6 +361,9 @@ if __name__ == "__main__":
     NUM_JOINTS = args.u_dim  # 你的机器人关节数量
     use_pinocchio = False
     # 创建生成器实例
+    # 两条分支功能等价（都是"生成笛卡尔参考轨迹 + 逆运动学解出关节轨迹"），
+    # 区别只是 IK 求解器不同：CasADi 版本是项目自带的轻量实现，
+    # pinocchio 版本依赖外部 pinocchio.casadi 绑定（默认不启用，见 README 踩坑记录）。
     if not use_pinocchio:
         traj_generator = CartesianTrajectoryGenerator(
             model_path=MODEL_XML_PATH,

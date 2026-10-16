@@ -1,3 +1,22 @@
+"""
+Koopman 动力学模型的训练/测试主入口。
+
+这是一次纯监督学习：用 SOARM101DataGenerator（或 WheelArmR 对应版本）采集
+的 (x_t, u_t, x_{t+1}, ...) 轨迹数据，训练目标是让模型多步滚动预测的状态
+和真实物理仿真状态之间的误差（loss）下降，和"奖励"无关。
+
+顶层调用关系：
+    python train.py --model <DKUC|DBKN|IKN|IBKN|...> --mode <train|test>
+        -> main(args)
+            -> DataGenerator(args).generate_and_save_data()   # 采集/加载数据
+            -> init_model(args)                                 # 按 --model 建网络
+            -> train(...) 或 evaluate(...)                       # 训练循环 / 测试评估
+
+不同模型架构（Koopformer/KoopmanLSTM 系列 vs. 其余线性/双线性/可逆网络）用的
+损失函数实现不同（models/losses.py 里的 koopformer_loss vs. k_linear_loss），
+所以 train()/evaluate() 内部都要按 `type(model).__name__` 做一次分支。
+"""
+
 import os
 import random
 import shutil
@@ -13,7 +32,6 @@ from args import Args
 from models.base_model import KoopmanNet
 from models.init_model import init_model
 from models.losses import k_linear_loss, koopformer_eval_loss_new, koopformer_loss, pred_and_eval_loss_new
-from SOARM101.SOARM101_DataCollection import SOARM101DataGenerator
 from utility import dump_json, plot_contour, plot_predictions
 
 
@@ -37,6 +55,13 @@ def set_seed(seed: int = 42) -> None:
 
 
 def evaluate(model: KoopmanNet, test_loader, scaler):
+    """
+    在给定的 test_loader（可以是验证集，也可以是 random/sin/chirp 测试集）上
+    跑一遍模型的多步滚动预测，汇总预测误差、笛卡尔位置误差(dis_loss)和
+    关节角误差(angle_loss)，并把所有预测/真实值拼接起来供后续画图/保存。
+
+    模型处于 eval 模式 + no_grad，只做前向推理不更新参数。
+    """
     scores = []
     dis_scores = []
     angle_scores = []
@@ -46,6 +71,9 @@ def evaluate(model: KoopmanNet, test_loader, scaler):
     model.eval()
     with torch.no_grad():
         for step, batch in enumerate(tqdm(test_loader)):
+            # Koopformer/KoopmanLSTM 系列网络需要整段历史序列做编码，
+            # 用专门的 koopformer_eval_loss_new 计算预测误差；
+            # 其余线性/双线性/可逆网络逐步滚动预测，用 pred_and_eval_loss_new。
             if type(model).__name__.startswith("Koopformer") or type(model).__name__.startswith("KoopmanLSTM"):
                 pred_and_error = koopformer_eval_loss_new(
                     batch_data=batch,
@@ -109,13 +137,21 @@ def train(
     pre_length,
     scaler,
 ):
+    """
+    标准的 epoch 训练循环：每个 batch 算多步预测损失、反传、更新参数；
+    每 eval_interval 个 epoch 在验证集上跑一次 evaluate()，只要预测误差
+    刷新历史最优就保存 checkpoint(best_model.pt) 和可视化图/指标 json，
+    这样训练中途中断也能拿到当前最好的模型，不需要等训练完全结束。
+    """
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+    # 指数学习率衰减：每个 epoch 后 lr 乘以 0.99，训练后期用更小步长精调。
     scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.99)
 
     start_time = time.time()
     global_step = 0
 
-    # 初始化损失记录字典
+    # 初始化损失记录字典（贯穿整个训练过程，每个 epoch 结束后追加一个平均值，
+    # 训练结束后整体存成 train_losses.json，用于事后画完整的损失曲线）。
     all_train_losses = dict(
         total_loss=[],  # 总损失
         koopman_loss=[],  # Koopman算子损失
@@ -127,7 +163,7 @@ def train(
     best_loss = 1000.0
     for epoch in tqdm(range(num_epochs)):
         epoch_start_time = time.time()
-        # 初始化当前epoch的损失记录
+        # 初始化当前epoch的损失记录（按 batch 累积，epoch 结束时取平均）
         epoch_train_losses = dict(
             total_loss=[],
             koopman_loss=[],
@@ -140,6 +176,9 @@ def train(
         )
         for step, batch in enumerate(train_loader):
             model.train()
+            # 同 evaluate()：不同网络家族用不同的损失函数实现，
+            # 因为 Koopformer/LSTM 需要先对历史窗口做序列编码，
+            # 而线性/双线性/可逆网络是逐步做 "编码->Koopman演化->解码"。
             if type(model).__name__.startswith("Koopformer") or type(model).__name__.startswith("KoopmanLSTM"):
                 losses = koopformer_loss(
                     epoch,
@@ -189,7 +228,9 @@ def train(
                     stable_Loss=[],
                     H_Loss=[],
                 )
-                # 计算各项损失的平均值
+                # 计算各项损失的平均值（分母加 1e-5 避免除零，
+                # 某些损失项在特定模型/配置下可能全程为 0，如 recon_loss 在
+                # use_decoder=False 时不参与训练）
                 for key in avg_losses.keys():
                     avg_losses[key] = sum(epoch_train_losses[key]) / (len(epoch_train_losses[key]) + 1e-5)
                 # 构建日志信息
@@ -209,6 +250,8 @@ def train(
                 }
                 print(log_info)
 
+        # 每个 epoch 结束后，把这个 epoch 最后一次打印的日志值写入 TensorBoard
+        # （不是逐 step 记录，是取本 epoch 内最后一个 log_interval 窗口的均值）。
         writer.add_scalar("Train/total_loss", log_info["total_loss"], epoch)
         writer.add_scalar("Train/koopman_loss", log_info["koopman_loss"], epoch)
         writer.add_scalar("Train/pred_loss", log_info["pred_loss"], epoch)
@@ -222,6 +265,8 @@ def train(
             print(f"Prediction error: {eval_info['avg_error']}")
             writer.add_scalar("Eval/total_loss", eval_info["avg_error"], epoch)
 
+            # 只有验证误差刷新历史最优时才落盘，best_model.pt 始终对应
+            # "迄今为止验证集上表现最好的一次" checkpoint，而不是最后一个 epoch。
             if eval_info["avg_error"] < best_loss:
                 best_loss = copy(eval_info["avg_error"])
                 # 创建检查点目录
@@ -233,7 +278,8 @@ def train(
                 print(f"Saving checkpoint to {ckpt_path}")
                 torch.save(model.state_dict(), ckpt_path)
                 torch.save(model.state_dict(), output_dir + "/best_model.pt")
-                # 根据状态维度选择可视化方式
+                # 根据状态维度选择可视化方式：低维状态(如本项目 x_dim=8)
+                # 直接画每一维的时间序列曲线更直观；高维状态画等高线图更紧凑。
                 if x_dim < 20:
                     # 低维数据使用标准预测图
                     plot_predictions(
@@ -256,7 +302,8 @@ def train(
                         epoch=epoch,
                     )
 
-                # 保存评估指标
+                # 保存评估指标（best_scores.json 只在验证误差刷新时更新，
+                # 是 README 里提到的"看训练是否收敛"的权威数据源之一）
                 epoch_scores = dict(
                     epoch=epoch,
                     train_total_loss=float(
@@ -287,24 +334,47 @@ def train(
                 (float(sum(epoch_train_losses[key]) / (len(epoch_train_losses[key]) + 1e-5)))
             ]
 
+    # train_losses.json 只在全部 epoch 跑完后一次性写入，训练过程中途查看不到；
+    # 想看实时曲线只能用上面已经在写的 TensorBoard。
     all_train_losses["time"] = time.time() - start_time
     dump_json(all_train_losses, output_dir + "/train_losses.json")
 
 
 def main(args):
+    """单个模型(args.model)在单个 env(args.env) 上完整跑一次 train 或 test 流程。"""
     # Loading dataset
     # set_seed(args.seed)
-    data_generate = SOARM101DataGenerator(args)
+    # 不同机器人(env)用各自的数据采集器，但接口(generate_and_save_data/
+    # get_train_loader/get_test_loader)完全一致，train()/evaluate() 不需要
+    # 关心具体是哪个机器人。
+    if args.env == "PIPER":
+        from PIPER.data_collection import PiperDataGenerator as DataGenerator
+    elif args.env == "WheelArmR":
+        from WheelArmR.WheelArmR_DataCollection import WheelArmRDataGenerator as DataGenerator
+    else:
+        from SOARM101.SOARM101_DataCollection import SOARM101DataGenerator as DataGenerator
+    data_generate = DataGenerator(args)
     # Model
+    if args.env == "PIPER":
+        torch.manual_seed(args.seed)
+        np.random.seed(args.seed)
+        random.seed(args.seed)
     model = init_model(args)
+    if args.env == "PIPER" and args.mode == "train":
+        from PIPER.data_collection import initialize_piper_model
+        initialize_piper_model(model, data_generate.env, data_generate.reference)
     print(model)
     scaler = None
+    # 采集/加载数据这一步对 train 和 test 都要做：train 模式下用它拿 train/val
+    # loader，test 模式下用它拿 random/sin/chirp 测试集。
     data_generate.generate_and_save_data()
     if args.mode == "train":
         train_loader, val_loader = data_generate.get_train_loader()
         print("==== Saving args ====")
         if not os.path.exists(args.output_dir):
             os.makedirs(args.output_dir)
+        # 把这次训练用的完整 args.py 拷贝进输出目录，方便事后追溯"这个
+        # checkpoint 到底是用什么超参训出来的"，比只记录部分参数更保险。
         shutil.copy("./args.py", args.output_dir + "/train_args.py")
         train(
             model=model,
@@ -327,6 +397,8 @@ def main(args):
         )
 
     elif args.mode == "test":
+        # test 模式要求之前已经训练过、有 best_model.pt 存在，
+        # 只做离线评估 + 画图，不打开 MuJoCo 可视化窗口。
         load_model_path = args.output_dir + "/best_model.pt"
         print(f"Loading the checkpoint from {load_model_path}")
         if not os.path.exists(load_model_path):
@@ -370,6 +442,8 @@ def main(args):
 if __name__ == "__main__":
     args = Args()
     if args.model == "all":
+        # --model all：依次训练/测试这 4 种主力架构，方便一次性做横向对比
+        # （更多变体架构在下面被注释掉，默认不参与"all"批量跑，避免耗时过长）。
         methods = [
             "IBKN",
             "DBKN",
@@ -381,6 +455,7 @@ if __name__ == "__main__":
         #            "Koopformer_KAN","KoopmanLSTMlinear","KoopmanLSTMlinear_KAN",
         #         ]
         if args.mode == "test":
+            # 批量测试用 CPU 就够快，且能避免多个模型反复抢占同一块 GPU 显存。
             args.device = "cpu"
         for method in methods:
             args.model = method

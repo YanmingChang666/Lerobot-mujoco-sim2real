@@ -1,9 +1,48 @@
+# Python / test / editor caches (keep source, meshes and documentation)
 __pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.ipynb_checkpoints/
+.venv/
+venv/
+*.egg-info/
+.vscode/
+.idea/
+.DS_Store
+*~
+*.swp
+*.tmp
+
+# Local credentials / environment overrides
+.env
+.env.*
+!.env.example
+
+# Reproducible datasets, training intermediates and visualization outputs
 data/
 ckpt/
+outputs/
 test_chirp/
 test_random/
 test_sin/
-results/SOARM101/12_12/
-results/SOARM101/12_13/
-.github/
+/control/ControlResults/
+*.log
+events.out.tfevents.*
+core
+core.[0-9]*
+
+# New experimental result trees are local. Keep one verified Piper demo
+# checkpoint and its compatibility metadata for the README quick start.
+# Previously tracked SO-101 reference models/results remain versioned.
+/results/*
+!/results/PIPER/
+/results/PIPER/*
+!/results/PIPER/piper_gripper_demo/
+/results/PIPER/piper_gripper_demo/*
+!/results/PIPER/piper_gripper_demo/DBKN/
+/results/PIPER/piper_gripper_demo/DBKN/*
+!/results/PIPER/piper_gripper_demo/DBKN/best_model.pt
+!/results/PIPER/piper_gripper_demo/DBKN/piper_data.json
+!/results/PIPER/piper_gripper_demo/DBKN/best_scores.json
