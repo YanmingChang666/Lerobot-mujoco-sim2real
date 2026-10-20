@@ -1,5 +1,8 @@
 # Piper 汉字书写：MuJoCo → Koopman DBKN → MPC
 
+[全部机械臂使用教程与命令速查](../docs/机械臂书写使用教程.md)
+
+
 这是 **标准 Piper 六关节机械臂** 的独立仿真流程。资产来自本机
 `/home/cym/ROS/Arms/agx_arm_sim/agx_arm_description/agx_arm_urdf/piper`。
 未使用 Piper-L/H/X；没有连接真机、CAN 或 SO-101 的 ZMQ 端口。

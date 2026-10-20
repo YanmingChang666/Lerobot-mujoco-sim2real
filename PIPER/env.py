@@ -12,15 +12,16 @@ MAX_SPEED = 0.5
 
 
 class PiperEnv:
-    def __init__(self, xml_path=MODEL):
+    def __init__(self, xml_path=MODEL, joint_names=None):
         self.model = mujoco.MjModel.from_xml_path(str(xml_path))
         self.data = mujoco.MjData(self.model)
-        joints = [self.model.joint(f"joint{i}") for i in range(1, 7)]
+        self.joint_names = joint_names or [f"joint{i}" for i in range(1, 7)]
+        joints = [self.model.joint(name) for name in self.joint_names]
         self.qadr = np.array([j.qposadr[0] for j in joints])
         self.vadr = np.array([j.dofadr[0] for j in joints])
         self.limits = np.array([j.range for j in joints])
         self.site = self.model.site("pen_tip").id
-        self.udim, self.xdim = 6, 9
+        self.udim, self.xdim = len(joints), len(joints)+3
         self.frame_skip = round(DT / self.model.opt.timestep)
         self.dt = self.frame_skip * self.model.opt.timestep
 
@@ -35,8 +36,8 @@ class PiperEnv:
 
     def step(self, action):
         action = np.asarray(action, dtype=float)
-        if action.shape != (6,) or not np.isfinite(action).all():
-            raise ValueError("Piper action must be six finite velocities (rad/s)")
+        if action.shape != (self.udim,) or not np.isfinite(action).all():
+            raise ValueError(f"Action must contain {self.udim} finite velocities (rad/s)")
         self.data.ctrl[:] = np.clip(action, -MAX_SPEED, MAX_SPEED)
         for _ in range(self.frame_skip):
             mujoco.mj_step(self.model, self.data)

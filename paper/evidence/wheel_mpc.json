@@ -1,0 +1,13 @@
+{
+  "mode": "mpc",
+  "text": "永",
+  "completed": true,
+  "steps": 2354,
+  "rmse_mm": 0.19393597509179553,
+  "max_error_mm": 0.37448731687428216,
+  "max_pen_tilt_deg": 0.1914954688385838,
+  "contact_simulated": false,
+  "hardware_connected": false,
+  "approach_duration_s": 5.0,
+  "tracking_pass_2mm": true
+}

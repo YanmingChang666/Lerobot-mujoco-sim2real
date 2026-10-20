@@ -9,7 +9,7 @@ HOME_DEG = (0., 0., 0., 0., 0., 0.)
 
 
 def approach_trajectory(home, target, limits, duration=5., dt=DT):
-    """Cosine-ramped velocity, common time law for all six joints.
+    """Cosine-ramped velocity, common time law for all joints.
 
     Unlike a quintic move, the long constant-speed section can cover the
     default home-to-writing displacement within 5s and the 0.5rad/s limit.
@@ -17,10 +17,10 @@ def approach_trajectory(home, target, limits, duration=5., dt=DT):
     velocity/acceleration. This is joint interpolation, not collision planning.
     """
     home, target = np.asarray(home, dtype=float), np.asarray(target, dtype=float)
-    if home.shape != (6,) or target.shape != (6,) or not np.isfinite([home, target]).all():
-        raise ValueError("Home and target must each contain six finite joint angles")
+    if home.ndim != 1 or target.shape != home.shape or limits.shape != (home.size, 2) or not np.isfinite([home, target]).all():
+        raise ValueError("Home and target must each contain matching finite joint angles")
     if np.any(np.minimum(home, target) < limits[:, 0]) or np.any(np.maximum(home, target) > limits[:, 1]):
-        raise ValueError("Home/approach target is outside Piper joint limits")
+        raise ValueError("Home/approach target is outside joint limits")
     if not np.isfinite(duration) or duration < 2*dt:
         raise ValueError("Approach duration must be finite and at least two control steps")
     count = round(duration/dt)

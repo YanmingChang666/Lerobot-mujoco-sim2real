@@ -17,38 +17,39 @@ from .startup import HOME_DEG, approach_trajectory, approach_action, verify_arri
 
 class LearnedMPC:
     """DBKN MPC with frozen bilinear B(z0) and explicit velocity bounds."""
-    def __init__(self, checkpoint, horizon=10):
+    def __init__(self, checkpoint, horizon=10, xdim=9, udim=6):
+        self.udim = udim
         import casadi as ca
         import torch
         from models.KoopmanBase import KoopmanBlinear
         self.torch = torch
         self.horizon = horizon
-        self.net = KoopmanBlinear(9, 6, [9, 64, 64, 64, 24], False, False).double().eval()
+        self.net = KoopmanBlinear(xdim, udim, [xdim, 64, 64, 64, 24], False, False).double().eval()
         self.net.load_state_dict(torch.load(checkpoint, map_location="cpu", weights_only=True))
         A = self.net.lA.weight.detach().numpy()
         B = self.net.lB.weight.detach().numpy()
         H = self.net.get_Hi_numpy()
         nz = len(A)
         z0 = ca.SX.sym("z0", nz)
-        ref = ca.SX.sym("ref", 9*horizon)
-        prev = ca.SX.sym("prev", 6)
-        controls = ca.SX.sym("u", 6*horizon)
+        ref = ca.SX.sym("ref", xdim*horizon)
+        prev = ca.SX.sym("prev", udim)
+        controls = ca.SX.sym("u", udim*horizon)
         Beff = ca.DM(B)
         for j in range(nz):
             Beff += z0[j]*ca.DM(H[j])
         z, cost, last = z0, 0, prev
-        weights = ca.DM([3000]*3 + [3]*6)
+        weights = ca.DM([3000]*3 + [3]*udim)
         for k in range(horizon):
-            u = controls[k*6:(k+1)*6]
+            u = controls[k*udim:(k+1)*udim]
             z = ca.DM(A)@z + Beff@u
-            err = z[:9] - ref[k*9:(k+1)*9]
+            err = z[:xdim] - ref[k*xdim:(k+1)*xdim]
             cost += ca.dot(weights*err, err) + .02*ca.sumsqr(u) + .02*ca.sumsqr(u-last)
             last = u
         self.solver = ca.nlpsol("piper_mpc", "ipopt", {
             "x": controls, "p": ca.vertcat(z0, ref, prev), "f": cost,
         }, {"ipopt.print_level": 0, "print_time": False, "ipopt.sb": "yes", "ipopt.max_iter": 50})
-        self.previous = np.zeros(6)
-        self.warmstart = np.zeros(horizon*6)
+        self.previous = np.zeros(udim)
+        self.warmstart = np.zeros(horizon*udim)
 
     def action(self, state, future):
         with self.torch.no_grad():
@@ -58,8 +59,8 @@ class LearnedMPC:
         if not self.solver.stats()["success"]:
             raise RuntimeError("MPC solver failed: " + self.solver.stats()["return_status"])
         u = np.asarray(solution["x"]).ravel()
-        self.previous = u[:6].copy()
-        self.warmstart = np.r_[u[6:], u[-6:]]
+        self.previous = u[:self.udim].copy()
+        self.warmstart = np.r_[u[self.udim:], u[-self.udim:]]
         return self.previous
 
 
@@ -85,73 +86,88 @@ def plot_result(path, reference, actual, down):
     plt.close(fig)
 
 
-def main():
-    parser = argparse.ArgumentParser(description=__doc__)
+def main(*, env_factory=PiperEnv, planner=plan, here=HERE, reference=REFERENCE,
+         model_file=None, center=(.30, 0), height=0., home_deg=HOME_DEG, metadata_name="piper_data.json", camera_distance=1.1, camera_height=None):
+    model_file = Path(model_file or here / "assets/piper.xml")
+    udim, xdim = len(home_deg), len(home_deg)+3
+    parser = argparse.ArgumentParser(description=f"{here.name} Chinese/English writing simulation")
     parser.add_argument("--mode", choices=["plan", "baseline", "mpc"], default="baseline")
-    parser.add_argument("--text", default="二")
-    parser.add_argument("--size", type=float, default=.08)
-    parser.add_argument("--center", type=float, nargs=2, default=[.30, 0])
-    parser.add_argument("--height", type=float, default=0.)
+    parser.add_argument("--text", default="二", help="Chinese text or English A-Z/a-z/spaces (rendered as capitals)")
+    parser.add_argument("--size", type=float, default=.08, help="Meters: Chinese character size; English whole-text bounding box")
+    parser.add_argument("--center", type=float, nargs=2, default=center)
+    parser.add_argument("--pen-yaw-deg", type=float, default=0.,
+                        help="Pen orientation about world Z; does not rotate the text")
+    parser.add_argument("--rotation-deg", type=float, default=0.,
+                        help="Rotate text about its center around world +Z; clockwise = negative")
+    parser.add_argument("--height", type=float, default=height)
     parser.add_argument("--lift", type=float, default=.03, help="Lift above writing plane (m)")
     parser.add_argument("--speed", type=float, default=.025, help="Peak Cartesian segment speed (m/s)")
-    parser.add_argument("--hanzi-data", type=Path, default=HERE.parent.parent / "hanzi-writer-data/data")
+    parser.add_argument("--hanzi-data", type=Path, default=here.parent.parent / "hanzi-writer-data/data")
     parser.add_argument("--headless", action="store_true")
-    parser.add_argument("--snapshot", type=Path, help="Save final 3D scene with gripper and both trails")
+    parser.add_argument("--snapshot", type=Path, help="Save final 3D scene with robot and both trails")
     parser.add_argument("--hold", action="store_true", help="Keep viewer open after writing until closed")
-    parser.add_argument("--home-deg", type=float, nargs=6, default=HOME_DEG,
-                        metavar=("J1", "J2", "J3", "J4", "J5", "J6"),
-                        help="Initial joint1..joint6 positions in degrees (default: all zero)")
+    parser.add_argument("--home-deg", type=float, nargs=udim, default=home_deg,
+                        metavar="DEG",
+                        help="Initial joint positions in degrees (default: all zero)")
     parser.add_argument("--approach-seconds", type=float, default=5., help="Home-to-first-stroke-above duration")
     parser.add_argument("--start-hold", type=float, default=1., help="Display initial pose for this many seconds (GUI only)")
     parser.add_argument("--approach-only", action="store_true", help="Stop above the first stroke after startup; do not write")
     parser.add_argument("--checkpoint", type=Path)
-    parser.add_argument("--output", type=Path, default=HERE / "outputs")
+    parser.add_argument("--output", type=Path, default=here / "outputs")
     args = parser.parse_args()
     if not np.isfinite(args.start_hold) or args.start_hold < 0:
         parser.error("--start-hold must be finite and nonnegative")
-    env = PiperEnv()
-    print(f"Planning {args.text!r}: six-joint pose IK, tip down, dt={DT}s", flush=True)
-    xyz, q, down = plan(env, args.text, args.size, args.center, args.height, args.lift,
-                        args.speed, args.hanzi_data)
+    view_height = args.height+.1 if camera_height is None else camera_height
+    from scipy.spatial.transform import Rotation
+    pen_rotation = Rotation.from_euler("z", args.pen_yaw_deg, degrees=True).as_matrix() @ PEN_ROTATION
+    env = env_factory()
+    if args.text.isascii():
+        print("English block capitals:", args.text.strip().upper(), "(whole text fits --size)", flush=True)
+    orientation_constraint = getattr(env, "orientation_constraint", "full_pose_tip_down")
+    print(f"Planning {args.text!r}: {udim} joints, {orientation_constraint}, dt={DT}s", flush=True)
+    xyz, q, down = planner(env, args.text, args.size, args.center, args.height, args.lift,
+                        args.speed, args.hanzi_data, rotation_deg=args.rotation_deg, pen_yaw_deg=args.pen_yaw_deg)
     args.output.mkdir(parents=True, exist_ok=True)
     if args.mode == "plan":
-        REFERENCE.parent.mkdir(exist_ok=True)
-        np.savez(REFERENCE, xyz=xyz, q=q, pen_down=down, dt=DT, text=args.text,
-                 rotation=PEN_ROTATION, model_sha256=hashlib.sha256((HERE/"assets/piper.xml").read_bytes()).hexdigest())
+        reference.parent.mkdir(exist_ok=True)
+        np.savez(reference, xyz=xyz, q=q, pen_down=down, dt=DT, text=args.text,
+                 orientation_constraint=orientation_constraint, rotation=pen_rotation, pen_yaw_deg=args.pen_yaw_deg, rotation_deg=args.rotation_deg, model_sha256=hashlib.sha256(model_file.read_bytes()).hexdigest())
         plot_result(args.output / "reference.png", xyz, xyz, down)
-        print(f"Saved {REFERENCE}; {len(q)} poses, {len(q)*DT:.2f}s; peak joint speed "
+        print(f"Saved {reference}; {len(q)} poses, {len(q)*DT:.2f}s; peak joint speed "
               f"{np.max(np.abs(np.diff(q, axis=0)/DT)):.4f}rad/s")
         return
     home = np.radians(args.home_deg)
     approach_t, approach_q, approach_v = approach_trajectory(home, q[0], env.limits, args.approach_seconds)
     # FK preview uses a separate model; runtime data is reset only once to home.
-    preview = PiperEnv()
+    preview = env_factory()
     approach_xyz = np.array([preview.reset(pose)[:3] for pose in approach_q])
     controller = None
     if args.mode == "mpc" and not args.approach_only:
         if args.checkpoint is None:
-            parser.error("--mode mpc requires a Piper DBKN --checkpoint")
-        metadata = json.loads(args.checkpoint.with_name("piper_data.json").read_text())
-        if metadata["x_dim"] != 9 or metadata["u_dim"] != 6:
-            raise ValueError("Checkpoint is not a Piper 9-state/6-action model")
-        model_hash = hashlib.sha256((HERE/"assets/piper.xml").read_bytes()).hexdigest()
+            parser.error("--mode mpc requires a matching DBKN --checkpoint")
+        metadata = json.loads(args.checkpoint.with_name(metadata_name).read_text())
+        if metadata["x_dim"] != xdim or metadata["u_dim"] != udim:
+            raise ValueError("Checkpoint state/action dimensions do not match robot")
+        model_hash = hashlib.sha256(model_file.read_bytes()).hexdigest()
         if metadata["model_sha256"] != model_hash or metadata["dt"] != DT:
             raise ValueError("Model/timestep differs from training; regenerate data and retrain")
         if np.any(q < np.array(metadata["q_min"])) or np.any(q > np.array(metadata["q_max"])):
             raise ValueError("Writing trajectory exceeds training joint coverage; re-plan and retrain")
-        controller = LearnedMPC(args.checkpoint)
+        controller = LearnedMPC(args.checkpoint, xdim=xdim, udim=udim)
     # Set the initial simulation pose once; subsequent motion uses mj_step,
     # not per-frame qpos teleportation. There is no hardware publisher.
     state = env.reset(home)
-    print("Initial pose joint1..joint6 (deg):", np.degrees(home).round(4))
+    print("Initial joint pose (deg):", np.degrees(home).round(4))
     print("Initial pen XYZ in base/world frame (m):", state[:3].round(6))
-    print("Approach target joint1..joint6 (deg):", np.degrees(q[0]).round(4))
+    print("Approach target joints (deg):", np.degrees(q[0]).round(4))
     print("Approach target XYZ (m):", xyz[0].round(6), "(above first stroke)")
     print(f"Approach: {args.approach_seconds:.2f}s, {len(approach_t)-1} steps, "
           f"peak reference velocity {np.max(np.abs(approach_v)):.4f}rad/s")
     paper = env.model.geom("paper")
+    half_angle = np.radians(args.rotation_deg)/2
+    paper.quat[:] = [np.cos(half_angle), 0, 0, np.sin(half_angle)]
     paper.pos[:] = [*args.center, args.height-.002]
-    paper.size[:2] = [max(.13, args.size*len(args.text)*.7), max(.13, args.size*.7)]
+    paper.size[:2] = [max(.13, args.size*(1 if args.text.isascii() else len(args.text))*.7), max(.13, args.size*.7)]
     full_reference = np.vstack([approach_xyz, xyz[1:]])
     full_down = np.r_[np.zeros(len(approach_xyz), dtype=bool), down[1:]]
     display_actual = [state[:3]]
@@ -166,8 +182,8 @@ def main():
         # must finish destroying the window before Python runs glfw.terminate
         # at exit; otherwise a short approach-only run can segfault on exit.
         viewer_threads = [thread for thread in threading.enumerate() if thread not in existing_threads]
-        viewer.cam.lookat[:] = [args.center[0], args.center[1], .1]
-        viewer.cam.distance = 1.1
+        viewer.cam.lookat[:] = [args.center[0], args.center[1], view_height]
+        viewer.cam.distance = camera_distance
         viewer.cam.azimuth, viewer.cam.elevation = 90, -45
         with viewer.lock():
             draw_trajectories(viewer.user_scn, full_reference, display_actual, full_down)
@@ -180,8 +196,8 @@ def main():
             args.snapshot.parent.mkdir(parents=True, exist_ok=True)
             with mujoco.Renderer(env.model, height=480, width=640) as renderer:
                 camera = mujoco.MjvCamera()
-                camera.lookat[:] = [args.center[0]-.08, args.center[1], .14]
-                camera.distance, camera.azimuth, camera.elevation = .85, 130, -35
+                camera.lookat[:] = [args.center[0]-.08, args.center[1], view_height+.04]
+                camera.distance, camera.azimuth, camera.elevation = camera_distance*.85/1.1, 130, -35
                 renderer.update_scene(env.data, camera=camera)
                 draw_trajectories(renderer.scene, full_reference, display_actual, full_down, append=True)
                 Image.fromarray(renderer.render()).save(args.snapshot)
@@ -221,7 +237,7 @@ def main():
                  q_reference_rad=approach_q[:m], q_reference_deg=np.degrees(approach_q[:m]),
                  qvel_reference_rad_s=approach_v[:m], xyz_reference_m=approach_xyz[:m],
                  actual_states=np.array(approach_states), actions_rad_s=np.array(approach_actions),
-                 joint_names=np.array([f"joint{i}" for i in range(1, 7)]), dt=DT)
+                 joint_names=np.array(env.joint_names), dt=DT)
         arrival_error = float(np.max(np.abs(np.degrees(state[3:]-q[0]))))
         approach_metrics = {"completed": approach_done, "duration_s": args.approach_seconds,
                             "simulated_duration_s": float(env.data.time-start_sim),
@@ -272,7 +288,7 @@ def main():
         actual = np.array(actual)
         n = len(actual)
         error = np.linalg.norm(actual-xyz[:n], axis=1)
-        metrics = {"mode": args.mode, "text": args.text, "completed": n == len(q),
+        metrics = {"orientation_constraint": orientation_constraint, "mode": args.mode, "text": args.text, "rotation_deg": args.rotation_deg, "pen_yaw_deg": args.pen_yaw_deg, "completed": n == len(q),
                    "steps": n, "rmse_mm": float(np.sqrt(np.mean(error**2))*1000),
                    "max_error_mm": float(error.max()*1000),
                    "max_pen_tilt_deg": float(np.degrees(max(orientations, default=0))),

@@ -4,17 +4,18 @@ from scipy.optimize import least_squares
 from scipy.spatial.transform import Rotation
 
 from control.hanzi_loader import text_to_strokes
+from control.latin_strokes import latin_to_strokes
 from .env import DT
 
 PEN_ROTATION = np.diag([-1., 1., -1.])  # pen local +Z points down
 
 
-def solve_ik(env, point, seed):
+def solve_ik(env, point, seed, target_rotation=PEN_ROTATION):
     def error(q):
         env.data.qpos[env.qadr] = q
         state = env.state()
         rot = env.data.site_xmat[env.site].reshape(3, 3)
-        orientation = Rotation.from_matrix(PEN_ROTATION @ rot.T).as_rotvec()
+        orientation = Rotation.from_matrix(target_rotation @ rot.T).as_rotvec()
         return np.r_[state[:3] - point, 0.15 * orientation]
 
     bounds = (env.limits[:, 0] + 1e-5, env.limits[:, 1] - 1e-5)
@@ -26,10 +27,23 @@ def solve_ik(env, point, seed):
     return result.x
 
 
-def plan(env, text, size, center, height, lift, speed, data_dir):
+def plan(env, text, size, center, height, lift, speed, data_dir, seeds=None, ik_solver=solve_ik, rotation_deg=0., pen_yaw_deg=0.):
     if not text.strip() or min(size, lift, speed) <= 0:
         raise ValueError("Text must be nonempty; size, lift and speed must be positive")
-    strokes = text_to_strokes(text, size_m=size, data_dir=str(data_dir))
+    target_rotation = Rotation.from_euler("z", pen_yaw_deg, degrees=True).as_matrix() @ PEN_ROTATION
+    if not np.isfinite([rotation_deg, pen_yaw_deg]).all():
+        raise ValueError("Rotation angle must be finite")
+    angle = np.radians(rotation_deg)
+    rotation_xy = np.array([[np.cos(angle), -np.sin(angle)],
+                            [np.sin(angle), np.cos(angle)]])
+    if text.isascii():
+        strokes = latin_to_strokes(text, size_m=size)
+        offset = 0.
+    else:
+        if any(c.isascii() and c.isalpha() for c in text):
+            raise ValueError("Mixed Chinese/English layout is not supported; write them separately")
+        strokes = text_to_strokes(text, size_m=size, data_dir=str(data_dir))
+        offset = (len(text) - 1) * size * 1.2 / 2
     points, down = [], []
 
     def append_segment(target, writing):
@@ -47,20 +61,19 @@ def plan(env, text, size, center, height, lift, speed, data_dir):
             points.append(start + s * (target - start))
             down.append(writing)
 
-    offset = (len(text) - 1) * size * 1.2 / 2
     for stroke in strokes:
-        xy = np.asarray(stroke) + np.array(center) - [offset, 0]
+        xy = (np.asarray(stroke) - [offset, 0]) @ rotation_xy.T + np.array(center)
         append_segment([*xy[0], height + lift], False)
         append_segment([*xy[0], height], False)
         for p in xy[1:]:
             append_segment([*p, height], True)
         append_segment([*xy[-1], height + lift], False)
     # Solve once with deterministic alternate seeds if the initial pose is poor.
-    seeds = [[0, 1.3, -1.5, 0, .5, 0], [0, 2, -1, 0, -.8, 0],
+    seeds = seeds if seeds is not None else [[0, 1.3, -1.5, 0, .5, 0], [0, 2, -1, 0, -.8, 0],
              [0, .5, -2, 0, .8, 0]]
     for seed in seeds:
         try:
-            q = solve_ik(env, points[0], np.array(seed))
+            q = ik_solver(env, points[0], np.array(seed), target_rotation=target_rotation)
             break
         except ValueError:
             continue
@@ -68,7 +81,7 @@ def plan(env, text, size, center, height, lift, speed, data_dir):
         raise ValueError("Initial pen pose unreachable; adjust center/height/size")
     joints = [q]
     for p in points[1:]:
-        q = solve_ik(env, p, q)
+        q = ik_solver(env, p, q, target_rotation=target_rotation)
         joints.append(q)
     joints = np.array(joints)
     peak_speed = np.max(np.abs(np.diff(joints, axis=0) / DT))

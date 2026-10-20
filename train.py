@@ -349,18 +349,24 @@ def main(args):
     # 关心具体是哪个机器人。
     if args.env == "PIPER":
         from PIPER.data_collection import PiperDataGenerator as DataGenerator
+    elif args.env == "X02CTPoseWriting":
+        from x02cTpose.data_collection import TPoseWritingDataGenerator as DataGenerator
+    elif args.env == "X02Writing":
+        from X02.data_collection import X02WritingDataGenerator as DataGenerator
+    elif args.env == "WheelArmRWriting":
+        from WheelArmR.data_collection import WheelArmWritingDataGenerator as DataGenerator
     elif args.env == "WheelArmR":
         from WheelArmR.WheelArmR_DataCollection import WheelArmRDataGenerator as DataGenerator
     else:
         from SOARM101.SOARM101_DataCollection import SOARM101DataGenerator as DataGenerator
     data_generate = DataGenerator(args)
     # Model
-    if args.env == "PIPER":
+    if args.env in ("PIPER", "WheelArmRWriting", "X02Writing", "X02CTPoseWriting"):
         torch.manual_seed(args.seed)
         np.random.seed(args.seed)
         random.seed(args.seed)
     model = init_model(args)
-    if args.env == "PIPER" and args.mode == "train":
+    if args.env in ("PIPER", "WheelArmRWriting", "X02Writing", "X02CTPoseWriting") and args.mode == "train":
         from PIPER.data_collection import initialize_piper_model
         initialize_piper_model(model, data_generate.env, data_generate.reference)
     print(model)

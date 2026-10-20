@@ -4,6 +4,16 @@
 
 [English](README.md) | 简体中文
 
+新增 [x02cTpose 四关节右臂书写](x02cTpose/README_CN.md)：T-pose 初始模型、汉字与英文、5 秒进场和独立 DBKN/MPC；腕部固定，采用允许笔倾斜的位置跟踪。
+
+论文补充与可复算实验数据：[paper 目录说明](paper/README.md)。
+
+📖 **[机械臂书写使用教程与命令速查](docs/机械臂书写使用教程.md)**：SO-ARM101、Piper、WheelArmR、X02，含居中/旋转书写、5 秒启动、训练和 MPC 命令。
+
+新增 [X02 右臂汉字书写](X02/README_CN.md)：保留双臂外观、右臂七轴控制、5 秒进场、旋转书写和独立 DBKN/MPC。
+
+新增 [WheelArmR 七轴书写流程](WheelArmR/README_CN.md)：七轴笔尖姿态 IK、5 秒平滑进场、红绿轨迹、独立 DBKN/MPC 训练。
+
 新增 [Piper 六关节汉字书写流程](PIPER/README_CN.md)：带夹爪模型、红绿轨迹对照、
 零位到第一笔上方的 5 秒平滑进场，以及可直接运行的 DBKN + MPC 示例权重。
 训练数据、日志和运行截图保留在本地，不纳入版本管理。

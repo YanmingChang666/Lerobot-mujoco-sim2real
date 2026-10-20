@@ -1,0 +1,14 @@
+{
+  "mode": "baseline",
+  "text": "永",
+  "rotation_deg": -90.0,
+  "completed": true,
+  "steps": 2354,
+  "rmse_mm": 0.0344651256015254,
+  "max_error_mm": 0.16215747640599953,
+  "max_pen_tilt_deg": 0.014914981057433338,
+  "contact_simulated": false,
+  "hardware_connected": false,
+  "approach_duration_s": 5.0,
+  "tracking_pass_2mm": true
+}

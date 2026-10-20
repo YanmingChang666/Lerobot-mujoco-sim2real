@@ -1,5 +1,6 @@
 """Task-local Piper data; reuse the existing training loader interface."""
 import hashlib
+import inspect
 import json
 from pathlib import Path
 
@@ -26,8 +27,8 @@ def initialize_piper_model(model, env, reference):
     with torch.no_grad():
         model.lA.weight.copy_(torch.eye(model.Nkoopman, device=device))
         model.H.weight.zero_()
-        for j in range(6):
-            delta = np.zeros(6)
+        for j in range(env.udim):
+            delta = np.zeros(env.udim)
             delta[j] = 1e-4
             plus = torch.tensor(env.reset(q+delta), dtype=torch.float32, device=device)[None]
             minus = torch.tensor(env.reset(q-delta), dtype=torch.float32, device=device)[None]
@@ -36,25 +37,29 @@ def initialize_piper_model(model, env, reference):
 
 
 class PiperDataGenerator(SOARM101DataGenerator):
+    env_factory = PiperEnv
+    reference_file = REFERENCE
+    metadata_name = "piper_data.json"
     def __init__(self, args):
         self.args = args
-        self.udim, self.xdim = 6, 9
-        self.env = PiperEnv(args.xml_path)
-        self.collate_fn = Collater(9, 6, args.device)
-        if not REFERENCE.exists():
-            raise FileNotFoundError("First run: python -m PIPER.write --mode plan")
-        with np.load(REFERENCE) as reference:
+        self.env = self.env_factory(args.xml_path)
+        self.udim, self.xdim = self.env.udim, self.env.xdim
+        self.collate_fn = Collater(self.xdim, self.udim, args.device)
+        if not self.reference_file.exists():
+            raise FileNotFoundError("First generate the robot writing reference with --mode plan")
+        with np.load(self.reference_file) as reference:
             model_hash = hashlib.sha256(Path(args.xml_path).read_bytes()).hexdigest()
             if reference["model_sha256"].item() != model_hash:
-                raise ValueError("Piper XML changed; regenerate the reference before training")
+                raise ValueError("Robot XML changed; regenerate the reference before training")
             self.reference = reference["q"].copy()
         self.rng = np.random.default_rng(args.seed)
         # Hash all environment/model assets, reference and this sampler so a
         # change in geometry, task, timestep or excitation cannot reuse old data.
         digest = hashlib.sha256()
-        for path in [Path(__file__), Path(__file__).with_name("env.py"), REFERENCE,
+        for path in [Path(__file__), Path(__file__).with_name("env.py"), self.reference_file,
+                     Path(inspect.getfile(self.env_factory)),
                      *sorted(Path(args.xml_path).parent.rglob("*.xml")),
-                     *sorted(Path(args.xml_path).parent.rglob("*.stl"))]:
+                     *sorted(Path(args.xml_path).parent.rglob("*.[sS][tT][lL]"))]:
             digest.update(path.read_bytes())
         digest.update(str(args.seed).encode())
         self.fingerprint = digest.hexdigest()[:16]
@@ -62,16 +67,16 @@ class PiperDataGenerator(SOARM101DataGenerator):
         self.cache.mkdir(parents=True, exist_ok=True)
 
     def generate_physics_based_data(self, traj_num, steps, input_type):
-        samples = np.empty((traj_num, steps + 1, 15), dtype=np.float32)
-        for i in tqdm(range(traj_num), desc=f"Piper {input_type}"):
-            q = self.reference[self.rng.integers(len(self.reference))] + self.rng.uniform(-.12, .12, 6)
+        samples = np.empty((traj_num, steps + 1, self.udim+self.xdim), dtype=np.float32)
+        for i in tqdm(range(traj_num), desc=f"{self.args.env} {input_type}"):
+            q = self.reference[self.rng.integers(len(self.reference))] + self.rng.uniform(-.12, .12, self.udim)
             state = self.env.reset(np.clip(q, self.env.limits[:, 0]+.02, self.env.limits[:, 1]-.02))
-            phase = self.rng.uniform(0, 2*np.pi, 6)
-            frequency = self.rng.uniform(.2, 2., 6)
-            amplitude = self.rng.uniform(.05, .3, 6)
+            phase = self.rng.uniform(0, 2*np.pi, self.udim)
+            frequency = self.rng.uniform(.2, 2., self.udim)
+            amplitude = self.rng.uniform(.05, .3, self.udim)
             for k in range(steps + 1):
                 if input_type == "random":
-                    action = self.rng.uniform(-.3, .3, 6)
+                    action = self.rng.uniform(-.3, .3, self.udim)
                 else:
                     t = k*DT
                     angle = frequency*t + (.5*t*t if input_type == "chirp" else 0)
@@ -98,11 +103,11 @@ class PiperDataGenerator(SOARM101DataGenerator):
         output = Path(a.output_dir)
         if a.mode == "train":
             output.mkdir(parents=True, exist_ok=True)
-            (output / "piper_data.json").write_text(json.dumps({
+            (output / self.metadata_name).write_text(json.dumps({
                 "fingerprint": self.fingerprint, "cache": str(self.cache),
-                "dt": DT, "x_dim": 9, "u_dim": 6,
+                "dt": DT, "x_dim": self.xdim, "u_dim": self.udim,
                 "model_sha256": hashlib.sha256(Path(a.xml_path).read_bytes()).hexdigest(),
-                "reference_sha256": hashlib.sha256(REFERENCE.read_bytes()).hexdigest(),
-                "q_min": self.train_data[:, :, 9:].min(axis=(0, 1)).tolist(),
-                "q_max": self.train_data[:, :, 9:].max(axis=(0, 1)).tolist(),
+                "reference_sha256": hashlib.sha256(self.reference_file.read_bytes()).hexdigest(),
+                "q_min": self.train_data[:, :, self.udim+3:].min(axis=(0, 1)).tolist(),
+                "q_max": self.train_data[:, :, self.udim+3:].max(axis=(0, 1)).tolist(),
             }, indent=2))

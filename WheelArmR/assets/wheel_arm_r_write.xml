@@ -1,0 +1,79 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mujoco model="wheel_arm_r_writing">
+  <compiler angle="radian" meshdir="." />
+  <default>
+    <default class="wheel_arm_r">
+      <joint damping=".2" frictionloss="0" armature="0.05" />
+      <default class="visual">
+        <geom type="mesh" contype="0" conaffinity="0" group="2" rgba="0.75 0.75 0.78 1" />
+      </default>
+    </default>
+  </default>
+  <asset>
+    <mesh file="Link1_R.STL" />
+    <mesh file="Link2_R.STL" />
+    <mesh file="Link3_R.STL" />
+    <mesh file="Link4_R.STL" />
+    <mesh file="Link5_R.STL" />
+    <mesh file="Link6_R.STL" />
+    <mesh file="Link7_R.STL" />
+  </asset>
+  <worldbody>
+    <light pos="0 0 2" dir="0 0 -1" directional="true" />
+    <geom name="floor" size="0 0 0.05" pos="0 0 -0.5" type="plane" rgba="0.85 0.85 0.85 1" contype="0" conaffinity="0" />
+    <body name="arm_base" pos="0 0 0" quat="1 0 0 0" childclass="wheel_arm_r" gravcomp="1">
+      <body name="Link1_R" pos="-0.006 -0.1212 0.2495" gravcomp="1">
+        <joint name="Link1_R_joint" type="hinge" axis="0 -1 0" range="-3.11 3.11" />
+        <inertial pos="0.00000128 -0.06718948 -0.00169473" mass="1.9705" fullinertia="0.00406412 0.00212713 0.00483190 0.00000004 -0.00000003 0.00007718" />
+        <geom class="visual" mesh="Link1_R" />
+        <body name="Link2_R" pos="0 -0.0903 0" gravcomp="1">
+          <joint name="Link2_R_joint" type="hinge" axis="0 0 -1" range="-2.09 2.09" />
+          <inertial pos="0.00000159 -0.04771776 0.00151186" mass="2.24398" fullinertia="0.01059384 0.00460327 0.00887057 0.00000005 -0.00000016 0.00016192" />
+          <geom class="visual" mesh="Link2_R" />
+          <body name="Link3_R" pos="0 -0.1435 0" gravcomp="1">
+            <joint name="Link3_R_joint" type="hinge" axis="0 -1 0" range="-3.11 3.11" />
+            <inertial pos="0.00584990 -0.08666796 0.00090258" mass="1.9242" fullinertia="0.00637330 0.00200297 0.00689645 -0.00073390 0.00002109 -0.00009871" />
+            <geom class="visual" mesh="Link3_R" />
+            <body name="Link4_R" pos="0.018 -0.1435 0" gravcomp="1">
+              <joint name="Link4_R_joint" type="hinge" axis="0 0 -1" range="-2.53 1.05" />
+              <inertial pos="-0.00776131 -0.03739972 -0.00157093" mass="1.6085" fullinertia="0.00543458 0.00288712 0.00445600 0.00056655 -0.00001963 -0.00009452" />
+              <geom class="visual" mesh="Link4_R" />
+              <body name="Link5_R" pos="-0.018 -0.116 0" gravcomp="1">
+                <joint name="Link5_R_joint" type="hinge" axis="0 -1 0" range="-3.11 3.11" />
+                <inertial pos="0 -0.08608780 0.00004550" mass="2.0883" fullinertia="0.00666564 0.00293621 0.00572911 0.00000018 -0.00000006 -0.00001050" />
+                <geom class="visual" mesh="Link5_R" />
+                <body name="Link6_R" pos="0 -0.198 0" gravcomp="1">
+                  <joint name="Link6_R_joint" type="hinge" axis="0 0 -1" range="-1.05 1.05" />
+                  <inertial pos="-0.00404898 0 0" mass="0.72496" fullinertia="0.00055089 0.00051171 0.00047795 0 0 0" />
+                  <geom class="visual" mesh="Link6_R" />
+                  <body name="Link7_R" pos="0 0 0" gravcomp="1">
+                    <joint name="Link7_R_joint" type="hinge" axis="1 0 0" range="-1.57 1.57" />
+                    <inertial pos="0.00506776 -0.03747899 0.00000155" mass="0.68606" fullinertia="0.00131096 0.00093371 0.00178512 0.00012800 -0.00000002 -0.00000013" />
+                    <geom class="visual" mesh="Link7_R" />
+                    <site name="eeframe" pos="0 0 0" />
+                    <geom name="pen" type="capsule" fromto="0 -.045 0 0 -.16 0" size=".003" rgba=".12 .12 .12 1" contype="0" conaffinity="0" mass=".01" />
+                    <site name="pen_tip" pos="0 -.16 0" quat=".7071067811865476 .7071067811865476 0 0" size=".003" rgba="0 0 1 1" />
+                  </body>
+                </body>
+              </body>
+            </body>
+          </body>
+        </body>
+      </body>
+    </body>
+    <geom name="paper" type="box" pos=".35 -.4 -.002" size=".13 .13 .002" rgba=".97 .97 .94 1" contype="0" conaffinity="0" />
+  </worldbody>
+  <keyframe>
+    <key name="home" qpos="0 0 0 0 0 0 0" ctrl="0 0 0 0 0 0 0" />
+  </keyframe>
+  <actuator>
+    <velocity name="Link1_R_joint" joint="Link1_R_joint" ctrlrange="-.5 .5" forcerange="-108 108" kv="80" />
+    <velocity name="Link2_R_joint" joint="Link2_R_joint" ctrlrange="-.5 .5" forcerange="-108 108" kv="80" />
+    <velocity name="Link3_R_joint" joint="Link3_R_joint" ctrlrange="-.5 .5" forcerange="-66 66" kv="80" />
+    <velocity name="Link4_R_joint" joint="Link4_R_joint" ctrlrange="-.5 .5" forcerange="-66 66" kv="80" />
+    <velocity name="Link5_R_joint" joint="Link5_R_joint" ctrlrange="-.5 .5" forcerange="-18 18" kv="80" />
+    <velocity name="Link6_R_joint" joint="Link6_R_joint" ctrlrange="-.5 .5" forcerange="-18 18" kv="80" />
+    <velocity name="Link7_R_joint" joint="Link7_R_joint" ctrlrange="-.5 .5" forcerange="-18 18" kv="80" />
+  </actuator>
+  <option timestep=".002" integrator="implicitfast" />
+</mujoco>

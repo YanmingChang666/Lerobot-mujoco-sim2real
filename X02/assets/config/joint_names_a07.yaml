@@ -1,0 +1,159 @@
+# a07 robot controller configuration
+# Right arm controller joint names
+controller_joint_names_r: ['', 'joint1_r', 'joint2_r', 'joint3_r', 'joint4_r', 'joint5_r', 'joint6_r', 'joint7_r']
+
+# Left arm controller joint names  
+controller_joint_names_l: ['', 'joint1_l', 'joint2_l', 'joint3_l', 'joint4_l', 'joint5_l', 'joint6_l', 'joint7_l']
+
+# Joint limits for right arm (from URDF)
+joint_limits_r:
+  joint1_r:
+    min: -1.57
+    max: 3.14
+    max_velocity: 1.0
+    max_effort: 100.0
+  joint2_r:
+    min: -0.174
+    max: 1.74
+    max_velocity: 1.0
+    max_effort: 100.0
+  joint3_r:
+    min: -2.61
+    max: 2.61
+    max_velocity: 1.0
+    max_effort: 100.0
+  joint4_r:
+    min: 0.0
+    max: 2.26
+    max_velocity: 1.0
+    max_effort: 100.0
+  joint5_r:
+    min: -2.48
+    max: 2.48
+    max_velocity: 1.0
+    max_effort: 100.0
+  joint6_r:
+    min: -0.52
+    max: 0.52
+    max_velocity: 1.0
+    max_effort: 100.0
+  joint7_r:
+    min: -1.3
+    max: 1.3
+    max_velocity: 1.0
+    max_effort: 100.0
+
+# Joint limits for left arm (from URDF)
+joint_limits_l:
+  joint1_l:
+    min: -1.57
+    max: 3.14
+    max_velocity: 1.0
+    max_effort: 100.0
+  joint2_l:
+    min: -0.174
+    max: 1.74
+    max_velocity: 1.0
+    max_effort: 100.0
+  joint3_l:
+    min: -2.61
+    max: 2.61
+    max_velocity: 1.0
+    max_effort: 100.0
+  joint4_l:
+    min: 0.0
+    max: 2.26
+    max_velocity: 1.0
+    max_effort: 100.0
+  joint5_l:
+    min: -2.48
+    max: 2.48
+    max_velocity: 1.0
+    max_effort: 100.0
+  joint6_l:
+    min: -0.52
+    max: 0.52
+    max_velocity: 1.0
+    max_effort: 100.0
+  joint7_l:
+    min: -1.3
+    max: 1.3
+    max_velocity: 1.0
+    max_effort: 100.0
+
+# Right arm controller configuration
+a07_right_arm_controller:
+  type: position_controllers/JointTrajectoryController
+  joints:
+    - joint1_r
+    - joint2_r
+    - joint3_r
+    - joint4_r
+    - joint5_r
+    - joint6_r
+    - joint7_r
+  constraints:
+    goal_time: 0.5
+    stopped_velocity_tolerance: 0.05
+    joint1_r:
+      trajectory: 0.1
+      goal: 0.1
+    joint2_r:
+      trajectory: 0.1
+      goal: 0.1
+    joint3_r:
+      trajectory: 0.1
+      goal: 0.1
+    joint4_r:
+      trajectory: 0.1
+      goal: 0.1
+    joint5_r:
+      trajectory: 0.1
+      goal: 0.1
+    joint6_r:
+      trajectory: 0.1
+      goal: 0.1
+    joint7_r:
+      trajectory: 0.1
+      goal: 0.1
+
+# Left arm controller configuration
+a07_left_arm_controller:
+  type: position_controllers/JointTrajectoryController
+  joints:
+    - joint1_l
+    - joint2_l
+    - joint3_l
+    - joint4_l
+    - joint5_l
+    - joint6_l
+    - joint7_l
+  constraints:
+    goal_time: 0.5
+    stopped_velocity_tolerance: 0.05
+    joint1_l:
+      trajectory: 0.1
+      goal: 0.1
+    joint2_l:
+      trajectory: 0.1
+      goal: 0.1
+    joint3_l:
+      trajectory: 0.1
+      goal: 0.1
+    joint4_l:
+      trajectory: 0.1
+      goal: 0.1
+    joint5_l:
+      trajectory: 0.1
+      goal: 0.1
+    joint6_l:
+      trajectory: 0.1
+      goal: 0.1
+    joint7_l:
+      trajectory: 0.1
+      goal: 0.1
+
+# Joint state publisher
+joint_state_controller:
+  type: joint_state_controller/JointStateController
+  publish_rate: 50

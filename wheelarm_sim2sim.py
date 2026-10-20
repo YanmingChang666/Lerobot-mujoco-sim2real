@@ -156,10 +156,13 @@ class Test:
 
     def runMPC(self):
         ref_traj_segment = self.state_all_ref[self.traj_index + 1 : self.traj_index + self.H + 1]
-        lifted_ref = np.zeros((self.H, self.mpc_controller.Nkoopman))
-        for i in range(len(ref_traj_segment)):
-            lifted_ref[i] = self.mpc_controller.Psi_o(torch.DoubleTensor(ref_traj_segment[i]).unsqueeze(0)).flatten()
-        ref_flat = lifted_ref.flatten().reshape(-1, 1)
+        if self.mpc_controller.state_full:
+            lifted_ref = np.zeros((self.H, self.mpc_controller.Nkoopman))
+            for i in range(len(ref_traj_segment)):
+                lifted_ref[i] = self.mpc_controller.Psi_o(torch.DoubleTensor(ref_traj_segment[i]).unsqueeze(0)).flatten()
+            ref_flat = lifted_ref.flatten().reshape(-1, 1)
+        else:
+            ref_flat = ref_traj_segment.flatten().reshape(-1, 1)
 
         z0 = self.mpc_controller.Psi_o(self.state_tensor)
         if self.mpc_controller.args.MPC_type == "mpc":
@@ -168,7 +171,6 @@ class Test:
             p = np.vstack([ref_flat, z0.reshape(-1, 1), self.mpc_controller.u_prev.reshape(-1, 1)])
 
         u, a = self.mpc_controller.get_control(p)
-        self.mpc_controller.u_prev = u
 
         s_next = self.runstep(a)
         self.actual_traj.append(s_next)

@@ -1,0 +1,226 @@
+<mujoco model="x2c scene">
+  <include file="x2c.xml"/>
+
+  <statistic center="1.0 0.7 1.0" extent="0.8"/>
+
+  <visual>
+    <headlight diffuse="0.6 0.6 0.6" ambient="0.1 0.1 0.1" specular="0.9 0.9 0.9"/>
+    <rgba haze="0.15 0.25 0.35 1"/>
+    <global azimuth="-140" elevation="-20"/>
+  </visual>
+
+  <asset>
+    <!-- Skybox and base ground textures -->
+    <texture type="skybox" builtin="flat" rgb1="0 0 0" rgb2="0 0 0" width="512" height="3072"/>
+    <texture type="2d" name="groundplane" builtin="checker" mark="edge" rgb1="0.2 0.3 0.4" rgb2="0.1 0.2 0.3" markrgb="0.8 0.8 0.8" width="300" height="300"/>
+    <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="5 5" reflectance="0.2"/>
+
+    <!-- Gravel effect for uneven surface -->
+    <texture type="2d" name="graveltex" builtin="checker" mark="none" rgb1="0.6 0.4 0.4" rgb2="0.35 0.35 0.35" width="200" height="200"/>
+    <material name="gravel" texture="graveltex" texuniform="true" texrepeat="15 15" reflectance="0.1"/>
+
+    <!-- Distinct color for ramp -->
+    <material name="rampmat" rgba="0.8 0.2 0.2 1" reflectance="0.3"/>
+  </asset>
+
+  <worldbody>
+    <light pos="1 0 3.5" dir="0 0 -1" directional="true"/>
+
+    <!-- Base ground -->
+    <geom name="floor" size="0 0 0.05" type="plane" material="groundplane"/>
+
+    <!-- Uneven gravel surface: bumps and dips -->
+    <geom name="bump1" pos="2.5 0.3 0.02" size="0.2 0.8 0.02" type="box" material="gravel"/>
+    <geom name="bump2" pos="3.7 -0.4 0.03" size="0.3 0.5 0.03" type="box" material="gravel"/>
+    <geom name="bump3" pos="4.8 0.5 0.015" size="0.15 0.6 0.015" type="box" material="gravel"/>
+    <geom name="dip1" pos="6 0.0 -0.01" size="0.25 1.5 0.01" type="box" material="gravel"/>
+
+    <!-- Continuous ramp: uphill, flat, downhill correctly oriented along X-axis -->
+    <!-- Uphill: +10° tilt around Y-axis, center height ~0.272 -->
+    <geom name="uphill" pos="8 0 0.08" size="1 2 0.1" type="box" quat="0.9962 0 -0.0872 0" material="rampmat"/>
+    <!-- Flat mid-section: horizontal at same center height -->
+    <geom name="flat" pos="10 0 0.27" size="1 2 0.09" type="box" material="rampmat"/>
+    <!-- Downhill: -10° tilt around Y-axis -->
+    <geom name="downhill" pos="12 0 0.08" size="1 2 0.1" type="box" quat="0.9962 0 0.0872 0" material="rampmat"/>
+
+    <!-- Continuous ramp: gentler 5° tilt -->
+    <!-- Uphill: +5° tilt around Y-axis -->
+    <!-- <geom name="uphill" pos="8 0 0.025" size="1 2 0.1" type="box" quat="0.99905 0 -0.04362 0" material="rampmat"/> -->
+    <!-- Flat mid-section: center at the end point height -->
+    <!-- <geom name="flat" pos="10 0 0.12" size="1 2 0.09" type="box" material="rampmat"/> -->
+    <!-- Downhill: –5° tilt around Y-axis -->
+    <!-- <geom name="downhill" pos="12 0 0.025" size="1 2 0.1" type="box" quat="0.99905 0 0.04362 0" material="rampmat"/> -->
+
+    <!-- 不平小方块路面（x ∈ [0.6, 3.2], y ∈ [-1.2, 1.0]，步长 0.2） -->
+    <geom name="b00_00" type="box" pos="0.6 -1.2 0.014" size="0.1 0.1 0.014" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b00_01" type="box" pos="0.6 -1.0 0.008" size="0.1 0.1 0.008" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b00_02" type="box" pos="0.6 -0.8 0.010" size="0.1 0.1 0.010" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b00_03" type="box" pos="0.6 -0.6 0.010" size="0.1 0.1 0.010" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b00_04" type="box" pos="0.6 -0.4 0.015" size="0.1 0.1 0.015" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b00_05" type="box" pos="0.6 -0.2 0.014" size="0.1 0.1 0.014" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b00_06" type="box" pos="0.6 0.0 0.016" size="0.1 0.1 0.016" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b00_07" type="box" pos="0.6 0.2 0.008" size="0.1 0.1 0.008" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b00_08" type="box" pos="0.6 0.4 0.012" size="0.1 0.1 0.012" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b00_09" type="box" pos="0.6 0.6 0.008" size="0.1 0.1 0.008" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b00_10" type="box" pos="0.6 0.8 0.010" size="0.1 0.1 0.010" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b00_11" type="box" pos="0.6 1.0 0.013" size="0.1 0.1 0.013" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b01_00" type="box" pos="0.8 -1.2 0.008" size="0.1 0.1 0.008" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b01_01" type="box" pos="0.8 -1.0 0.019" size="0.1 0.1 0.019" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b01_02" type="box" pos="0.8 -0.8 0.028" size="0.1 0.1 0.028" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b01_03" type="box" pos="0.8 -0.6 0.026" size="0.1 0.1 0.026" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b01_04" type="box" pos="0.8 -0.4 0.019" size="0.1 0.1 0.019" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b01_05" type="box" pos="0.8 -0.2 0.027" size="0.1 0.1 0.027" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b01_06" type="box" pos="0.8 0.0 0.031" size="0.1 0.1 0.031" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b01_07" type="box" pos="0.8 0.2 0.015" size="0.1 0.1 0.015" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b01_08" type="box" pos="0.8 0.4 0.031" size="0.1 0.1 0.031" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b01_09" type="box" pos="0.8 0.6 0.029" size="0.1 0.1 0.029" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b01_10" type="box" pos="0.8 0.8 0.022" size="0.1 0.1 0.022" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b01_11" type="box" pos="0.8 1.0 0.009" size="0.1 0.1 0.009" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b02_00" type="box" pos="1.0 -1.2 0.017" size="0.1 0.1 0.017" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b02_01" type="box" pos="1.0 -1.0 0.022" size="0.1 0.1 0.022" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b02_02" type="box" pos="1.0 -0.8 0.017" size="0.1 0.1 0.017" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b02_03" type="box" pos="1.0 -0.6 0.017" size="0.1 0.1 0.017" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b02_04" type="box" pos="1.0 -0.4 0.032" size="0.1 0.1 0.032" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b02_05" type="box" pos="1.0 -0.2 0.027" size="0.1 0.1 0.027" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b02_06" type="box" pos="1.0 0.0 0.031" size="0.1 0.1 0.031" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b02_07" type="box" pos="1.0 0.2 0.030" size="0.1 0.1 0.030" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b02_08" type="box" pos="1.0 0.4 0.026" size="0.1 0.1 0.026" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b02_09" type="box" pos="1.0 0.6 0.034" size="0.1 0.1 0.034" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b02_10" type="box" pos="1.0 0.8 0.023" size="0.1 0.1 0.023" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b02_11" type="box" pos="1.0 1.0 0.013" size="0.1 0.1 0.013" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b03_00" type="box" pos="1.2 -1.2 0.016" size="0.1 0.1 0.016" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b03_01" type="box" pos="1.2 -1.0 0.027" size="0.1 0.1 0.027" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b03_02" type="box" pos="1.2 -0.8 0.032" size="0.1 0.1 0.032" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b03_03" type="box" pos="1.2 -0.6 0.027" size="0.1 0.1 0.027" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b03_04" type="box" pos="1.2 -0.4 0.029" size="0.1 0.1 0.029" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b03_05" type="box" pos="1.2 -0.2 0.016" size="0.1 0.1 0.016" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b03_06" type="box" pos="1.2 0.0 0.020" size="0.1 0.1 0.020" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b03_07" type="box" pos="1.2 0.2 0.021" size="0.1 0.1 0.021" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b03_08" type="box" pos="1.2 0.4 0.017" size="0.1 0.1 0.017" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b03_09" type="box" pos="1.2 0.6 0.020" size="0.1 0.1 0.020" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b03_10" type="box" pos="1.2 0.8 0.017" size="0.1 0.1 0.017" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b03_11" type="box" pos="1.2 1.0 0.010" size="0.1 0.1 0.010" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b04_00" type="box" pos="1.4 -1.2 0.014" size="0.1 0.1 0.014" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b04_01" type="box" pos="1.4 -1.0 0.022" size="0.1 0.1 0.022" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b04_02" type="box" pos="1.4 -0.8 0.022" size="0.1 0.1 0.022" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b04_03" type="box" pos="1.4 -0.6 0.019" size="0.1 0.1 0.019" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b04_04" type="box" pos="1.4 -0.4 0.020" size="0.1 0.1 0.020" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b04_05" type="box" pos="1.4 -0.2 0.034" size="0.1 0.1 0.034" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b04_06" type="box" pos="1.4 0.0 0.028" size="0.1 0.1 0.028" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b04_07" type="box" pos="1.4 0.2 0.027" size="0.1 0.1 0.027" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b04_08" type="box" pos="1.4 0.4 0.018" size="0.1 0.1 0.018" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b04_09" type="box" pos="1.4 0.6 0.030" size="0.1 0.1 0.030" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b04_10" type="box" pos="1.4 0.8 0.018" size="0.1 0.1 0.018" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b04_11" type="box" pos="1.4 1.0 0.011" size="0.1 0.1 0.011" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b05_00" type="box" pos="1.6 -1.2 0.017" size="0.1 0.1 0.017" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b05_01" type="box" pos="1.6 -1.0 0.028" size="0.1 0.1 0.028" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b05_02" type="box" pos="1.6 -0.8 0.026" size="0.1 0.1 0.026" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b05_03" type="box" pos="1.6 -0.6 0.029" size="0.1 0.1 0.029" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b05_04" type="box" pos="1.6 -0.4 0.032" size="0.1 0.1 0.032" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b05_05" type="box" pos="1.6 -0.2 0.031" size="0.1 0.1 0.031" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b05_06" type="box" pos="1.6 0.0 0.020" size="0.1 0.1 0.020" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b05_07" type="box" pos="1.6 0.2 0.016" size="0.1 0.1 0.016" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b05_08" type="box" pos="1.6 0.4 0.021" size="0.1 0.1 0.021" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b05_09" type="box" pos="1.6 0.6 0.020" size="0.1 0.1 0.020" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b05_10" type="box" pos="1.6 0.8 0.019" size="0.1 0.1 0.019" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b05_11" type="box" pos="1.6 1.0 0.017" size="0.1 0.1 0.017" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b06_00" type="box" pos="1.8 -1.2 0.016" size="0.1 0.1 0.016" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b06_01" type="box" pos="1.8 -1.0 0.021" size="0.1 0.1 0.021" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b06_02" type="box" pos="1.8 -0.8 0.028" size="0.1 0.1 0.028" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b06_03" type="box" pos="1.8 -0.6 0.023" size="0.1 0.1 0.023" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b06_04" type="box" pos="1.8 -0.4 0.033" size="0.1 0.1 0.033" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b06_05" type="box" pos="1.8 -0.2 0.024" size="0.1 0.1 0.024" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b06_06" type="box" pos="1.8 0.0 0.020" size="0.1 0.1 0.020" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b06_07" type="box" pos="1.8 0.2 0.020" size="0.1 0.1 0.020" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b06_08" type="box" pos="1.8 0.4 0.026" size="0.1 0.1 0.026" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b06_09" type="box" pos="1.8 0.6 0.020" size="0.1 0.1 0.020" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b06_10" type="box" pos="1.8 0.8 0.027" size="0.1 0.1 0.027" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b06_11" type="box" pos="1.8 1.0 0.016" size="0.1 0.1 0.016" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b07_00" type="box" pos="2.0 -1.2 0.011" size="0.1 0.1 0.011" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b07_01" type="box" pos="2.0 -1.0 0.019" size="0.1 0.1 0.019" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b07_02" type="box" pos="2.0 -0.8 0.035" size="0.1 0.1 0.035" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b07_03" type="box" pos="2.0 -0.6 0.025" size="0.1 0.1 0.025" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b07_04" type="box" pos="2.0 -0.4 0.017" size="0.1 0.1 0.017" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b07_05" type="box" pos="2.0 -0.2 0.016" size="0.1 0.1 0.016" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b07_06" type="box" pos="2.0 0.0 0.017" size="0.1 0.1 0.017" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b07_07" type="box" pos="2.0 0.2 0.028" size="0.1 0.1 0.028" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b07_08" type="box" pos="2.0 0.4 0.031" size="0.1 0.1 0.031" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b07_09" type="box" pos="2.0 0.6 0.023" size="0.1 0.1 0.023" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b07_10" type="box" pos="2.0 0.8 0.016" size="0.1 0.1 0.016" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b07_11" type="box" pos="2.0 1.0 0.011" size="0.1 0.1 0.011" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b08_00" type="box" pos="2.2 -1.2 0.017" size="0.1 0.1 0.017" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b08_01" type="box" pos="2.2 -1.0 0.026" size="0.1 0.1 0.026" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b08_02" type="box" pos="2.2 -0.8 0.034" size="0.1 0.1 0.034" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b08_03" type="box" pos="2.2 -0.6 0.032" size="0.1 0.1 0.032" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b08_04" type="box" pos="2.2 -0.4 0.015" size="0.1 0.1 0.015" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b08_05" type="box" pos="2.2 -0.2 0.029" size="0.1 0.1 0.029" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b08_06" type="box" pos="2.2 0.0 0.029" size="0.1 0.1 0.029" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b08_07" type="box" pos="2.2 0.2 0.026" size="0.1 0.1 0.026" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b08_08" type="box" pos="2.2 0.4 0.020" size="0.1 0.1 0.020" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b08_09" type="box" pos="2.2 0.6 0.028" size="0.1 0.1 0.028" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b08_10" type="box" pos="2.2 0.8 0.017" size="0.1 0.1 0.017" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b08_11" type="box" pos="2.2 1.0 0.012" size="0.1 0.1 0.012" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b09_00" type="box" pos="2.4 -1.2 0.012" size="0.1 0.1 0.012" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b09_01" type="box" pos="2.4 -1.0 0.034" size="0.1 0.1 0.034" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b09_02" type="box" pos="2.4 -0.8 0.033" size="0.1 0.1 0.033" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b09_03" type="box" pos="2.4 -0.6 0.020" size="0.1 0.1 0.020" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b09_04" type="box" pos="2.4 -0.4 0.025" size="0.1 0.1 0.025" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b09_05" type="box" pos="2.4 -0.2 0.019" size="0.1 0.1 0.019" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b09_06" type="box" pos="2.4 0.0 0.033" size="0.1 0.1 0.033" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b09_07" type="box" pos="2.4 0.2 0.032" size="0.1 0.1 0.032" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b09_08" type="box" pos="2.4 0.4 0.021" size="0.1 0.1 0.021" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b09_09" type="box" pos="2.4 0.6 0.028" size="0.1 0.1 0.028" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b09_10" type="box" pos="2.4 0.8 0.027" size="0.1 0.1 0.027" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b09_11" type="box" pos="2.4 1.0 0.009" size="0.1 0.1 0.009" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b10_00" type="box" pos="2.6 -1.2 0.015" size="0.1 0.1 0.015" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b10_01" type="box" pos="2.6 -1.0 0.026" size="0.1 0.1 0.026" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b10_02" type="box" pos="2.6 -0.8 0.031" size="0.1 0.1 0.031" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b10_03" type="box" pos="2.6 -0.6 0.026" size="0.1 0.1 0.026" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b10_04" type="box" pos="2.6 -0.4 0.015" size="0.1 0.1 0.015" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b10_05" type="box" pos="2.6 -0.2 0.021" size="0.1 0.1 0.021" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b10_06" type="box" pos="2.6 0.0 0.015" size="0.1 0.1 0.015" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b10_07" type="box" pos="2.6 0.2 0.034" size="0.1 0.1 0.034" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b10_08" type="box" pos="2.6 0.4 0.033" size="0.1 0.1 0.033" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b10_09" type="box" pos="2.6 0.6 0.032" size="0.1 0.1 0.032" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b10_10" type="box" pos="2.6 0.8 0.021" size="0.1 0.1 0.021" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b10_11" type="box" pos="2.6 1.0 0.008" size="0.1 0.1 0.008" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b11_00" type="box" pos="2.8 -1.2 0.016" size="0.1 0.1 0.016" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b11_01" type="box" pos="2.8 -1.0 0.034" size="0.1 0.1 0.034" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b11_02" type="box" pos="2.8 -0.8 0.017" size="0.1 0.1 0.017" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b11_03" type="box" pos="2.8 -0.6 0.025" size="0.1 0.1 0.025" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b11_04" type="box" pos="2.8 -0.4 0.016" size="0.1 0.1 0.016" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b11_05" type="box" pos="2.8 -0.2 0.030" size="0.1 0.1 0.030" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b11_06" type="box" pos="2.8 0.0 0.030" size="0.1 0.1 0.030" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b11_07" type="box" pos="2.8 0.2 0.018" size="0.1 0.1 0.018" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b11_08" type="box" pos="2.8 0.4 0.025" size="0.1 0.1 0.025" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b11_09" type="box" pos="2.8 0.6 0.026" size="0.1 0.1 0.026" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b11_10" type="box" pos="2.8 0.8 0.020" size="0.1 0.1 0.020" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b11_11" type="box" pos="2.8 1.0 0.016" size="0.1 0.1 0.016" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b12_00" type="box" pos="3.0 -1.2 0.012" size="0.1 0.1 0.012" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b12_01" type="box" pos="3.0 -1.0 0.019" size="0.1 0.1 0.019" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b12_02" type="box" pos="3.0 -0.8 0.026" size="0.1 0.1 0.026" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b12_03" type="box" pos="3.0 -0.6 0.030" size="0.1 0.1 0.030" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b12_04" type="box" pos="3.0 -0.4 0.019" size="0.1 0.1 0.019" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b12_05" type="box" pos="3.0 -0.2 0.021" size="0.1 0.1 0.021" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b12_06" type="box" pos="3.0 0.0 0.035" size="0.1 0.1 0.035" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b12_07" type="box" pos="3.0 0.2 0.028" size="0.1 0.1 0.028" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b12_08" type="box" pos="3.0 0.4 0.024" size="0.1 0.1 0.024" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b12_09" type="box" pos="3.0 0.6 0.025" size="0.1 0.1 0.025" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b12_10" type="box" pos="3.0 0.8 0.017" size="0.1 0.1 0.017" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b12_11" type="box" pos="3.0 1.0 0.010" size="0.1 0.1 0.010" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b13_00" type="box" pos="3.2 -1.2 0.011" size="0.1 0.1 0.011" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b13_01" type="box" pos="3.2 -1.0 0.013" size="0.1 0.1 0.013" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b13_02" type="box" pos="3.2 -0.8 0.010" size="0.1 0.1 0.010" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b13_03" type="box" pos="3.2 -0.6 0.010" size="0.1 0.1 0.010" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b13_04" type="box" pos="3.2 -0.4 0.008" size="0.1 0.1 0.008" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b13_05" type="box" pos="3.2 -0.2 0.014" size="0.1 0.1 0.014" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b13_06" type="box" pos="3.2 0.0 0.010" size="0.1 0.1 0.010" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b13_07" type="box" pos="3.2 0.2 0.017" size="0.1 0.1 0.017" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b13_08" type="box" pos="3.2 0.4 0.016" size="0.1 0.1 0.016" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b13_09" type="box" pos="3.2 0.6 0.008" size="0.1 0.1 0.008" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b13_10" type="box" pos="3.2 0.8 0.010" size="0.1 0.1 0.010" rgba="0.4 0.4 0.4 1"/>
+    <geom name="b13_11" type="box" pos="3.2 1.0 0.014" size="0.1 0.1 0.014" rgba="0.4 0.4 0.4 1"/>
+
+    <!-- ====== 自定义地形结束 ====== -->
+  </worldbody>
+</mujoco>

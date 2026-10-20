@@ -154,6 +154,9 @@ class Args:
 
     # 每个 env 的资产子目录/文件名布局。换机械臂时在这里加一条，不做成通用插件框架。
     ROBOT_ASSET_LAYOUT = {
+        "X02CTPoseWriting": {"robot_dir": "x02cTpose", "subdir": "assets", "scene_file": "right_write.xml", "arm_file": "right_write.xml"},
+        "X02Writing": {"robot_dir": "X02", "subdir": "assets", "scene_file": "x02_right_write.xml", "arm_file": "x02_right_write.xml"},
+        "WheelArmRWriting": {"robot_dir": "WheelArmR", "subdir": "assets", "scene_file": "wheel_arm_r_write.xml", "arm_file": "wheel_arm_r_write.xml"},
         "PIPER": {"subdir": "assets", "scene_file": "piper.xml", "arm_file": "piper.xml"},
         "SOARM101": {"subdir": "SO101", "scene_file": "scene_with_table_v.xml", "arm_file": "so101_new_calib_v.xml"},
         "WheelArmR": {"subdir": "assets", "scene_file": "wheel_arm_r.xml", "arm_file": "wheel_arm_r.xml"},
@@ -172,9 +175,13 @@ class Args:
         if self.args.env == "PIPER":
             # Piper has six arm joints; SO-101 checkpoints are incompatible.
             self.args.x_dim, self.args.u_dim = 9, 6
+        if self.args.env in ("WheelArmRWriting", "X02Writing"):
+            self.args.x_dim, self.args.u_dim = 10, 7
+        if self.args.env == "X02CTPoseWriting":
+            self.args.x_dim, self.args.u_dim = 7, 4
         layout = self.ROBOT_ASSET_LAYOUT[self.args.env]
-        self.args.xml_path = os.path.join(project_root, self.args.env, layout["subdir"], layout["scene_file"])
-        self.args.arm_xml_path = os.path.join(project_root, self.args.env, layout["subdir"], layout["arm_file"])
+        self.args.xml_path = os.path.join(project_root, layout.get("robot_dir", self.args.env), layout["subdir"], layout["scene_file"])
+        self.args.arm_xml_path = os.path.join(project_root, layout.get("robot_dir", self.args.env), layout["subdir"], layout["arm_file"])
         # 动态生成输出目录：results/<env>/<suffix>/<model>/，
         # 训练日志、best_model.pt、评估结果都落在这个目录下。
         self.args.output_dir = os.path.join(project_root, "results", self.args.env, self.args.suffix, self.args.model)

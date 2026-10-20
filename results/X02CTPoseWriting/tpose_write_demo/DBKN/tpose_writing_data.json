@@ -1,0 +1,21 @@
+{
+  "fingerprint": "57d106b17d0f7331",
+  "cache": "/home/cym/ROS/Arms/isaac_so_arm101/Lerobot-mujoco-sim2real/X02CTPoseWriting/data/57d106b17d0f7331",
+  "dt": 0.02,
+  "x_dim": 7,
+  "u_dim": 4,
+  "model_sha256": "bd147689be3ef6d170d271df948c1eb2f478306a8f76e864cbda20ecec2be76f",
+  "reference_sha256": "1bbc6c710ec083c4747d251ef50c00f72dbeb0c84d1a4cd4f5a4213d8ae7d1b8",
+  "q_min": [
+    -0.4477410912513733,
+    0.9961212873458862,
+    0.2726624310016632,
+    -1.7895467281341553
+  ],
+  "q_max": [
+    0.12921330332756042,
+    1.4481513500213623,
+    0.6083881855010986,
+    -1.0541120767593384
+  ]
+}
