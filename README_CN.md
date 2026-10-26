@@ -4,6 +4,8 @@
 
 [English](README.md) | 简体中文
 
+🎬 **[演示操作说明](docs/演示操作说明.md)**：全部 8 台书写机器人的准备步骤、演示命令、MPC 训练和常见问题。
+
 🆕 **通用书写框架**：新增机器人只需写一个 YAML（[robots/README_CN.md](robots/README_CN.md)），
 从 URDF 自动生成书写模型、按关节数自动选择 IK 模式、自动搜索 IK 起始姿态。
 统一入口 `python -m writing --robot <名字> --text 永 --hold`，`python -m writing --list` 查看全部机器人；

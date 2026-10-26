@@ -43,6 +43,9 @@ def main(argv=None):
             sys.exit("\nerror: --robot is required")
         return
     spec = load_robot(known.robot)
+    if not spec.model.exists():
+        sys.exit(f"error: {spec.name} model not found: {spec.model}\n"
+                 f"Generate it first (once per machine): python -m writing.build_model --robot {spec.name}")
     if spec.ik_mode != "auto" or spec.dof < 6:
         print(f"{spec.name}: {spec.dof} joints, IK mode {spec.resolved_ik_mode}", flush=True)
     from PIPER.write import main as run_writing
