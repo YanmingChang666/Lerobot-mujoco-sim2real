@@ -1,0 +1,28 @@
+# Unitree G1 人形机器人右臂（7 轴）书写。全部由本文件 + 通用代码完成，没有专门的 Python 代码。
+# 生成模型：python -m writing.build_model --robot g1_right
+# 书写：    python -m writing --robot g1_right --text 二 --hold
+name: g1_right
+description: Unitree G1 humanoid, right arm 7-DoF (generic, YAML only)
+train_env: G1RightWriting
+model: robots/g1_right/assets/g1_right_write.xml
+joints: [right_shoulder_pitch_joint, right_shoulder_roll_joint, right_shoulder_yaw_joint,
+         right_elbow_joint, right_wrist_roll_joint, right_wrist_pitch_joint, right_wrist_yaw_joint]
+write_defaults:
+  center: [0.35, -0.15]      # 纸面中心，世界坐标 (m)
+  height: 0.75               # 纸面高度 (m)，相当于桌面
+  rotation_deg: -90          # 字的上方朝机器人前方，从机器人视角正着读
+  camera_distance: 1.6
+  camera_height: 0.85
+ik:
+  # 自动搜索到的起始姿态（rad），放在这里可跳过搜索；改了纸面位置也没关系，失效时会自动重新搜索
+  seeds:
+    - [-0.059873, 0.063578, 0.008299, -0.019184, -0.062512, 0.077228, -0.023727]
+build:
+  urdf: ../PACE/Beyondmimic_Deploy_G1/unitree_description/urdf/g1/main.urdf
+  base_pos: [0, 0, 0.793]    # 骨盆离地高度，腿伸直站立
+  floor_height: 0
+  pen:
+    link: right_rubber_hand  # 握笔的 link
+    mount: [0.08, 0, 0]      # 握笔点（该 link 坐标系，m），大约在拳心
+    direction: [0, 0, -1]    # 笔从握笔点指向笔尖的方向（该 link 坐标系）；拳头竖握，笔朝下
+    length: 0.12

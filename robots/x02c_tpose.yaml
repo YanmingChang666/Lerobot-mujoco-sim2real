@@ -1,0 +1,21 @@
+# x02c T-pose 全身模型，右臂 4 个关节，腕部固定。原有实现，通过 overrides 保持与 python -m x02cTpose.write 一致。
+name: x02c_tpose
+description: x02c humanoid T-pose, right arm 4-DoF, fixed wrist
+train_env: X02CTPoseWriting
+model: x02cTpose/assets/right_write.xml
+joints: [right_shoulder_pitch_joint, right_shoulder_roll_joint, right_shoulder_yaw_joint, right_elbow_joint]
+reference: x02cTpose/data/writing_reference.npz
+cache_dir: X02CTPoseWriting/data
+output: x02cTpose/outputs
+metadata_name: tpose_writing_data.json
+write_defaults:
+  center: [0.30, -0.20]
+  height: 0.90
+  camera_distance: 2.6
+  camera_height: 0.95
+ik:
+  mode: position_soft_tilt
+overrides:
+  env_class: x02cTpose.env:TPoseWritingEnv
+  planner: x02cTpose.trajectory:plan
+  data_generator: x02cTpose.data_collection:TPoseWritingDataGenerator

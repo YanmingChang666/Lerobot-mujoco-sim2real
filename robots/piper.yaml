@@ -1,0 +1,18 @@
+# AgileX Piper 六轴臂（带夹爪外观）。原有实现，通过 overrides 保持与 python -m PIPER.write 完全一致。
+name: piper
+description: AgileX Piper 6-DoF arm with gripper
+train_env: PIPER
+model: PIPER/assets/piper.xml
+joints: [joint1, joint2, joint3, joint4, joint5, joint6]
+reference: PIPER/data/reference.npz
+cache_dir: PIPER/data
+output: PIPER/outputs
+metadata_name: piper_data.json
+write_defaults:
+  center: [0.30, 0.0]
+  height: 0.0
+  camera_distance: 1.1
+overrides:
+  env_class: PIPER.env:PiperEnv
+  planner: PIPER.trajectory:plan
+  data_generator: PIPER.data_collection:PiperDataGenerator

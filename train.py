@@ -347,26 +347,22 @@ def main(args):
     # 不同机器人(env)用各自的数据采集器，但接口(generate_and_save_data/
     # get_train_loader/get_test_loader)完全一致，train()/evaluate() 不需要
     # 关心具体是哪个机器人。
-    if args.env == "PIPER":
-        from PIPER.data_collection import PiperDataGenerator as DataGenerator
-    elif args.env == "X02CTPoseWriting":
-        from x02cTpose.data_collection import TPoseWritingDataGenerator as DataGenerator
-    elif args.env == "X02Writing":
-        from X02.data_collection import X02WritingDataGenerator as DataGenerator
-    elif args.env == "WheelArmRWriting":
-        from WheelArmR.data_collection import WheelArmWritingDataGenerator as DataGenerator
+    # 书写机器人（robots/*.yaml）由注册表给出采集器；其余是两个非书写的旧环境。
+    writing_robot = args.robot_spec is not None
+    if writing_robot:
+        DataGenerator = args.robot_spec.data_generator()
     elif args.env == "WheelArmR":
         from WheelArmR.WheelArmR_DataCollection import WheelArmRDataGenerator as DataGenerator
     else:
         from SOARM101.SOARM101_DataCollection import SOARM101DataGenerator as DataGenerator
     data_generate = DataGenerator(args)
     # Model
-    if args.env in ("PIPER", "WheelArmRWriting", "X02Writing", "X02CTPoseWriting"):
+    if writing_robot:
         torch.manual_seed(args.seed)
         np.random.seed(args.seed)
         random.seed(args.seed)
     model = init_model(args)
-    if args.env in ("PIPER", "WheelArmRWriting", "X02Writing", "X02CTPoseWriting") and args.mode == "train":
+    if writing_robot and args.mode == "train":
         from PIPER.data_collection import initialize_piper_model
         initialize_piper_model(model, data_generate.env, data_generate.reference)
     print(model)
@@ -382,6 +378,8 @@ def main(args):
         # 把这次训练用的完整 args.py 拷贝进输出目录，方便事后追溯"这个
         # checkpoint 到底是用什么超参训出来的"，比只记录部分参数更保险。
         shutil.copy("./args.py", args.output_dir + "/train_args.py")
+        if writing_robot:
+            shutil.copy(args.robot_spec.source, args.output_dir + "/robot.yaml")
         train(
             model=model,
             train_loader=train_loader,

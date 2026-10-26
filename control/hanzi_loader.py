@@ -59,6 +59,8 @@ def load_hanzi_medians(char: str, data_dir: str = DEFAULT_HANZI_DATA_DIR) -> lis
     # 找不到文件时给出明确报错: 常见原因是 data_dir 路径写错(默认路径是作者本机的), 或该字不在 9574 字的数据集里。
     if not os.path.exists(path):
         raise FileNotFoundError(f"找不到汉字 '{char}' 的笔画数据: {path}")
+    if os.path.getsize(path) == 0:
+        raise ValueError(f"汉字 '{char}' 的笔画数据文件是空的: {path}；请重新下载 hanzi-writer-data")
     with open(path, encoding="utf-8") as f:
         # data 是一个 dict, 常见字段有 strokes(笔画轮廓)、medians(笔画中线)、radStrokes 等; 这里只用 medians。
         data = json.load(f)

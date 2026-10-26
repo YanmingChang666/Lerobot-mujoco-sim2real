@@ -27,11 +27,11 @@ def solve_ik(env, point, seed, target_rotation=PEN_ROTATION):
     return result.x
 
 
-def plan(env, text, size, center, height, lift, speed, data_dir, seeds=None, ik_solver=solve_ik, rotation_deg=0., pen_yaw_deg=0.):
+def cartesian_path(text, size, center, height, lift, speed, data_dir, rotation_deg=0.):
+    """Text -> timed pen-tip points (N,3) and pen-down mask, before any IK."""
     if not text.strip() or min(size, lift, speed) <= 0:
         raise ValueError("Text must be nonempty; size, lift and speed must be positive")
-    target_rotation = Rotation.from_euler("z", pen_yaw_deg, degrees=True).as_matrix() @ PEN_ROTATION
-    if not np.isfinite([rotation_deg, pen_yaw_deg]).all():
+    if not np.isfinite(rotation_deg):
         raise ValueError("Rotation angle must be finite")
     angle = np.radians(rotation_deg)
     rotation_xy = np.array([[np.cos(angle), -np.sin(angle)],
@@ -68,6 +68,32 @@ def plan(env, text, size, center, height, lift, speed, data_dir, seeds=None, ik_
         for p in xy[1:]:
             append_segment([*p, height], True)
         append_segment([*xy[-1], height + lift], False)
+    return np.array(points), np.array(down, dtype=bool)
+
+
+def pen_rotation(pen_yaw_deg=0.):
+    if not np.isfinite(pen_yaw_deg):
+        raise ValueError("Rotation angle must be finite")
+    return Rotation.from_euler("z", pen_yaw_deg, degrees=True).as_matrix() @ PEN_ROTATION
+
+
+def track_path(env, points, q0, ik_solver, target_rotation, max_speed=.4):
+    """IK every point starting from the first-point solution q0; check joint speed."""
+    q = q0
+    joints = [q]
+    for p in points[1:]:
+        q = ik_solver(env, p, q, target_rotation=target_rotation)
+        joints.append(q)
+    joints = np.array(joints)
+    peak_speed = np.max(np.abs(np.diff(joints, axis=0) / DT))
+    if peak_speed > max_speed:
+        raise ValueError(f"Reference requires {peak_speed:.3f}rad/s; reduce --speed (limit {max_speed})")
+    return joints
+
+
+def plan(env, text, size, center, height, lift, speed, data_dir, seeds=None, ik_solver=solve_ik, rotation_deg=0., pen_yaw_deg=0.):
+    points, down = cartesian_path(text, size, center, height, lift, speed, data_dir, rotation_deg)
+    target_rotation = pen_rotation(pen_yaw_deg)
     # Solve once with deterministic alternate seeds if the initial pose is poor.
     seeds = seeds if seeds is not None else [[0, 1.3, -1.5, 0, .5, 0], [0, 2, -1, 0, -.8, 0],
              [0, .5, -2, 0, .8, 0]]
@@ -79,12 +105,5 @@ def plan(env, text, size, center, height, lift, speed, data_dir, seeds=None, ik_
             continue
     else:
         raise ValueError("Initial pen pose unreachable; adjust center/height/size")
-    joints = [q]
-    for p in points[1:]:
-        q = ik_solver(env, p, q, target_rotation=target_rotation)
-        joints.append(q)
-    joints = np.array(joints)
-    peak_speed = np.max(np.abs(np.diff(joints, axis=0) / DT))
-    if peak_speed > .4:
-        raise ValueError(f"Reference requires {peak_speed:.3f}rad/s; reduce --speed (limit 0.4)")
-    return np.array(points), joints, np.array(down, dtype=bool)
+    joints = track_path(env, points, q, ik_solver, target_rotation)
+    return points, joints, down

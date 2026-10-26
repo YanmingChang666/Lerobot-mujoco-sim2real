@@ -1,0 +1,18 @@
+# WheelArm 右臂七轴。原有实现，通过 overrides 保持与 python -m WheelArmR.write 完全一致。
+name: wheelarm_r
+description: WheelArm right arm, 7-DoF
+train_env: WheelArmRWriting
+model: WheelArmR/assets/wheel_arm_r_write.xml
+joints: [Link1_R_joint, Link2_R_joint, Link3_R_joint, Link4_R_joint, Link5_R_joint, Link6_R_joint, Link7_R_joint]
+reference: WheelArmR/data/writing_reference.npz
+cache_dir: WheelArmRWriting/data
+output: WheelArmR/outputs
+metadata_name: wheelarm_writing_data.json
+write_defaults:
+  center: [0.35, -0.40]
+  height: 0.0
+  camera_distance: 1.1
+overrides:
+  env_class: WheelArmR.env:WheelArmWritingEnv
+  planner: WheelArmR.trajectory:plan
+  data_generator: WheelArmR.data_collection:WheelArmWritingDataGenerator

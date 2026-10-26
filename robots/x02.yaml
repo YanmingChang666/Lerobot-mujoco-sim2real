@@ -1,0 +1,19 @@
+# X02 人形上身，右臂七轴，左臂固定。原有实现，通过 overrides 保持与 python -m X02.write 完全一致。
+name: x02
+description: X02 humanoid upper body, right arm 7-DoF
+train_env: X02Writing
+model: X02/assets/x02_right_write.xml
+joints: [joint1_r, joint2_r, joint3_r, joint4_r, joint5_r, joint6_r, joint7_r]
+reference: X02/data/writing_reference.npz
+cache_dir: X02Writing/data
+output: X02/outputs
+metadata_name: x02_writing_data.json
+write_defaults:
+  center: [0.20, -0.25]
+  height: -0.23
+  camera_distance: 1.9
+  camera_height: 0.2
+overrides:
+  env_class: X02.env:X02WritingEnv
+  planner: X02.trajectory:plan
+  data_generator: X02.data_collection:X02WritingDataGenerator

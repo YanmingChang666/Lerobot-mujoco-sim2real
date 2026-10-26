@@ -4,6 +4,11 @@
 
 [English](README.md) | 简体中文
 
+🆕 **通用书写框架**：新增机器人只需写一个 YAML（[robots/README_CN.md](robots/README_CN.md)），
+从 URDF 自动生成书写模型、按关节数自动选择 IK 模式、自动搜索 IK 起始姿态。
+统一入口 `python -m writing --robot <名字> --text 永 --hold`，`python -m writing --list` 查看全部机器人；
+已用 Unitree G1 右臂（7 轴）和 SO-ARM101（5 轴）验证。
+
 新增 [x02cTpose 四关节右臂书写](x02cTpose/README_CN.md)：T-pose 初始模型、汉字与英文、5 秒进场和独立 DBKN/MPC；腕部固定，采用允许笔倾斜的位置跟踪。
 
 论文补充与可复算实验数据：[paper 目录说明](paper/README.md)。

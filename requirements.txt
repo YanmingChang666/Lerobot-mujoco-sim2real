@@ -10,3 +10,5 @@ pyzmq==27.1.0
 rerun==1.0.30
 torch==2.4.1+cu121
 tqdm==4.67.1
+scipy
+pyyaml

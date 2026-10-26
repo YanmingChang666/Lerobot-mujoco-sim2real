@@ -87,22 +87,24 @@ def plot_result(path, reference, actual, down):
 
 
 def main(*, env_factory=PiperEnv, planner=plan, here=HERE, reference=REFERENCE,
-         model_file=None, center=(.30, 0), height=0., home_deg=HOME_DEG, metadata_name="piper_data.json", camera_distance=1.1, camera_height=None):
+         model_file=None, center=(.30, 0), height=0., home_deg=HOME_DEG, metadata_name="piper_data.json", camera_distance=1.1, camera_height=None,
+         output_dir=None, hanzi_data=None, argv=None, prog=None, robot_name=None,
+         rotation_deg=0., pen_yaw_deg=0.):
     model_file = Path(model_file or here / "assets/piper.xml")
     udim, xdim = len(home_deg), len(home_deg)+3
-    parser = argparse.ArgumentParser(description=f"{here.name} Chinese/English writing simulation")
+    parser = argparse.ArgumentParser(prog=prog, description=f"{robot_name or here.name} Chinese/English writing simulation")
     parser.add_argument("--mode", choices=["plan", "baseline", "mpc"], default="baseline")
     parser.add_argument("--text", default="二", help="Chinese text or English A-Z/a-z/spaces (rendered as capitals)")
     parser.add_argument("--size", type=float, default=.08, help="Meters: Chinese character size; English whole-text bounding box")
     parser.add_argument("--center", type=float, nargs=2, default=center)
-    parser.add_argument("--pen-yaw-deg", type=float, default=0.,
+    parser.add_argument("--pen-yaw-deg", type=float, default=pen_yaw_deg,
                         help="Pen orientation about world Z; does not rotate the text")
-    parser.add_argument("--rotation-deg", type=float, default=0.,
+    parser.add_argument("--rotation-deg", type=float, default=rotation_deg,
                         help="Rotate text about its center around world +Z; clockwise = negative")
     parser.add_argument("--height", type=float, default=height)
     parser.add_argument("--lift", type=float, default=.03, help="Lift above writing plane (m)")
     parser.add_argument("--speed", type=float, default=.025, help="Peak Cartesian segment speed (m/s)")
-    parser.add_argument("--hanzi-data", type=Path, default=here.parent.parent / "hanzi-writer-data/data")
+    parser.add_argument("--hanzi-data", type=Path, default=Path(hanzi_data) if hanzi_data else here.parent.parent / "hanzi-writer-data/data")
     parser.add_argument("--headless", action="store_true")
     parser.add_argument("--snapshot", type=Path, help="Save final 3D scene with robot and both trails")
     parser.add_argument("--hold", action="store_true", help="Keep viewer open after writing until closed")
@@ -113,8 +115,8 @@ def main(*, env_factory=PiperEnv, planner=plan, here=HERE, reference=REFERENCE,
     parser.add_argument("--start-hold", type=float, default=1., help="Display initial pose for this many seconds (GUI only)")
     parser.add_argument("--approach-only", action="store_true", help="Stop above the first stroke after startup; do not write")
     parser.add_argument("--checkpoint", type=Path)
-    parser.add_argument("--output", type=Path, default=here / "outputs")
-    args = parser.parse_args()
+    parser.add_argument("--output", type=Path, default=Path(output_dir) if output_dir else here / "outputs")
+    args = parser.parse_args(argv)
     if not np.isfinite(args.start_hold) or args.start_hold < 0:
         parser.error("--start-hold must be finite and nonnegative")
     view_height = args.height+.1 if camera_height is None else camera_height
