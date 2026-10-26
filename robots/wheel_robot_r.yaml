@@ -1,5 +1,5 @@
 # 轮式机器人完整模型（底盘 + 升降 + 腰 + 双臂），只用右臂 7 轴书写，其余关节固定在 0。
-# 生成模型：python -m writing.build_model --robot wheel_robot_r
+# 模型已随仓库提供；修改 build: 后重新生成：python -m writing.build_model --robot wheel_robot_r
 name: wheel_robot_r
 description: Wheel robot full model, right arm 7-DoF (others fixed)
 train_env: WheelRobotRWriting
@@ -13,7 +13,8 @@ ik:
   seeds:
     - [0.92554644, -0.41913206, -1.33945726, -1.77813039, -0.69048797, -0.98614513, 0.53061671]
 build:
-  urdf: "wheel_robot/wheel robot.urdf"
+  urdf: "robots/wheel_robot_r/source/wheel robot.urdf"
+  copy_meshes: false
   kv: 80
   pen:
     link: Link7_R            # 与原 WheelArmR 书写模型相同的握笔方式

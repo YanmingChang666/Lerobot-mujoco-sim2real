@@ -5,7 +5,7 @@ import mujoco
 import numpy as np
 
 HERE = Path(__file__).resolve().parent
-MODEL = HERE / "assets/piper.xml"
+MODEL = HERE.parent / "robots/piper/assets/piper.xml"
 REFERENCE = HERE / "data/reference.npz"
 DT = 0.02
 MAX_SPEED = 0.5

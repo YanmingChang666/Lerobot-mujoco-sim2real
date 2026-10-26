@@ -2,7 +2,7 @@
 name: x02
 description: X02 humanoid upper body, right arm 7-DoF
 train_env: X02Writing
-model: X02/assets/x02_right_write.xml
+model: robots/x02/assets/x02_right_write.xml
 joints: [joint1_r, joint2_r, joint3_r, joint4_r, joint5_r, joint6_r, joint7_r]
 reference: X02/data/writing_reference.npz
 cache_dir: X02Writing/data

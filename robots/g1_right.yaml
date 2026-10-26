@@ -1,5 +1,5 @@
 # Unitree G1 人形机器人右臂（7 轴）书写。全部由本文件 + 通用代码完成，没有专门的 Python 代码。
-# 生成模型：python -m writing.build_model --robot g1_right
+# 模型已随仓库提供；修改 build: 后重新生成：python -m writing.build_model --robot g1_right
 # 书写：    python -m writing --robot g1_right --text 二 --hold
 name: g1_right
 description: Unitree G1 humanoid, right arm 7-DoF (generic, YAML only)
@@ -18,7 +18,8 @@ ik:
   seeds:
     - [-0.059873, 0.063578, 0.008299, -0.019184, -0.062512, 0.077228, -0.023727]
 build:
-  urdf: ../PACE/Beyondmimic_Deploy_G1/unitree_description/urdf/g1/main.urdf
+  urdf: robots/g1_right/source/unitree_description/urdf/g1/main.urdf
+  copy_meshes: false
   base_pos: [0, 0, 0.793]    # 骨盆离地高度，腿伸直站立
   floor_height: 0
   pen:

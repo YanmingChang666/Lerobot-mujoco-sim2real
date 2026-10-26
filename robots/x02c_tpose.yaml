@@ -2,7 +2,7 @@
 name: x02c_tpose
 description: x02c humanoid T-pose, right arm 4-DoF, fixed wrist
 train_env: X02CTPoseWriting
-model: x02cTpose/assets/right_write.xml
+model: robots/x02c_tpose/assets/right_write.xml
 joints: [right_shoulder_pitch_joint, right_shoulder_roll_joint, right_shoulder_yaw_joint, right_elbow_joint]
 reference: x02cTpose/data/writing_reference.npz
 cache_dir: X02CTPoseWriting/data

@@ -23,7 +23,9 @@ screenshots are kept local.
 ├── SOARM101/                 # MuJoCo simulation environment
 │   ├── SOARM101_Env.py       # Gymnasium-style env wrapper
 │   ├── SOARM101_DataCollection.py  # Data collection script
-│   └── SO101/                # Robot URDF/XML models
+│   └── (models live in robots/so101/SO101/)
+├── robots/                   # All robot models (URDF/MJCF/meshes) and writing configs *.yaml
+├── writing/                  # Generic writing framework: python -m writing --robot <name>
 ├── models/                   # Koopman network implementations
 │   ├── base_model.py         # KoopmanNet base class
 │   ├── KoopmanBase.py        # DKUC/DBKN linear/bilinear models
@@ -183,7 +185,7 @@ python IBKN_UKF.py --model IBKN --suffix wide_range
 python DBKN_KESO.py --model DBKN --suffix wide_range
 ```
 
-Before widening the range, check the physical joint limits (the `range` attribute on each `<joint>` in `SOARM101/SO101/so101_new_calib_v.xml`) and keep the new perturbation bounds within them.
+Before widening the range, check the physical joint limits (the `range` attribute on each `<joint>` in `robots/so101/SO101/so101_new_calib_v.xml`) and keep the new perturbation bounds within them.
 
 ## ✍️ Handwriting (multi-stroke: pen-up -> transit -> pen-down)
 

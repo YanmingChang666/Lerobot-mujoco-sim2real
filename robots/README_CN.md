@@ -10,7 +10,40 @@ python -m writing --robot g1_right --help
 ```
 
 原来的入口 `python -m PIPER.write`、`WheelArmR.write`、`X02.write`、`x02cTpose.write` 保持不变，
-已训练的权重、数据缓存全部照常可用。
+已训练的权重照常可用。
+
+## 目录结构
+
+所有机器人的模型文件（URDF、MJCF、网格）都在本目录下，随仓库提供，克隆后即可运行，不需要先生成模型。
+
+```text
+robots/
+├── README_CN.md                     本说明
+├── <名字>.yaml                      每台书写机器人一个配置文件
+├── piper/assets/                    Piper：piper.xml、源 URDF、meshes/
+├── wheelarm_r/assets/               WheelArm 单独右臂：wheel_arm_r_write.xml、旧的 wheel_arm_r.xml、STL
+├── x02/assets/                      X02：x02_right_write.xml、urdf/a07.*、meshes/
+├── x02c_tpose/assets/               x02c T-pose：right_write.xml、x2c_TPose.urdf、meshes/
+├── x2c/assets/                      X2C 全身模型（只作存档，没有书写配置）
+├── so101/
+│   ├── SO101/                       SO-ARM101 原始模型；旧 Koopman 实验与真机脚本也用它
+│   └── assets/so101_write.xml       书写模型（由 SO101/ 生成，网格直接引用 SO101/assets）
+├── g1_right/
+│   ├── source/unitree_description/  G1 源 URDF + 用到的 35 个网格
+│   └── assets/g1_right_write.xml    书写模型（由 source/ 生成）
+├── wheel_robot_r/
+│   ├── source/                      轮式机器人整机 URDF + meshes/
+│   └── assets/wheel_robot_r_write.xml
+└── robot0309_r/
+    ├── source/robot0309/            robot0309 ROS 包：URDF、meshes/、launch/、config/
+    └── assets/                      书写模型 + 简化后的底座网格（原底座超过 MuJoCo 面数上限）
+```
+
+- `source/` 是原始模型，`assets/` 是书写用的 MJCF。由 YAML 生成的模型通过相对路径直接引用
+  `source/` 里的网格，不重复复制（`build.copy_meshes: false`）。
+- 运行时生成的数据不在这里，也不入库：训练参考与数据缓存在 YAML 的 `reference` / `cache_dir`，
+  书写结果在 `output`（新机器人默认是 `robots/<名字>/data`、`robots/<名字>/outputs`）。
+- robot0309 的 Isaac USD 导出文件（每个 172 MB）超过 GitHub 上限，不入库，见 `.gitignore`。
 
 ## 新增一台机器人（以 G1 右臂为例）
 
@@ -20,18 +53,20 @@ python -m writing --robot g1_right --help
 python -m writing.build_model --inspect /path/to/robot.urdf
 ```
 
-**2. 写 `robots/<名字>.yaml`**（可从 [g1_right.yaml](g1_right.yaml) 复制修改）
+**2. 把源模型放到 `robots/<名字>/source/`**（URDF 和它引用的网格；ROS 包整个放进来，
+`package://包名/...` 会自动找到），**然后写 `robots/<名字>.yaml`**（可从 [g1_right.yaml](g1_right.yaml) 复制修改）
 
 ```yaml
 name: g1_right
 train_env: G1RightWriting            # train.py --env 用的名字，也是 results/ 下的目录名
-model: robots/g1_right/assets/g1_right_write.xml   # 生成的模型放这里
+model: robots/g1_right/assets/g1_right_write.xml   # 生成的书写模型放这里
 joints: [right_shoulder_pitch_joint, ..., right_wrist_yaw_joint]   # 书写关节，基座→末端
 write_defaults:
   center: [0.35, -0.15]              # 纸面中心 XY（世界坐标，m）
   height: 0.75                       # 纸面高度 Z（m）
 build:
-  urdf: ../PACE/.../g1/main.urdf     # 相对仓库根目录，或绝对路径；支持 package:// 网格路径
+  urdf: robots/g1_right/source/unitree_description/urdf/g1/main.urdf   # 相对仓库根目录；支持 package://
+  copy_meshes: false                 # 引用 source/ 里的网格，不复制
   base_pos: [0, 0, 0.793]            # 基座放在世界的位置
   pen:
     link: right_rubber_hand          # 握笔的 link
@@ -40,7 +75,7 @@ build:
     length: 0.12
 ```
 
-**3. 生成模型**
+**3. 生成模型**（生成的 `assets/` 要一起提交到 git，别人克隆后就不用再生成）
 
 ```bash
 python -m writing.build_model --robot g1_right
@@ -116,7 +151,7 @@ python -m writing --robot g1_right --text 二 --mode mpc --hold \
 | `build.base_pos` | | URDF 原点 | 基座位置 |
 | `build.fixed_joints` | | 全部 0 | 非书写关节的固定角度，`{关节名: 度}` |
 | `build.package_dirs` | | 自动向上查找 | `package://` 找不到时手动指定 `{包名: 路径}` |
-| `build.copy_meshes` | | true | 把网格复制到模型旁边；超过 20 万面的 STL 会自动简化 |
+| `build.copy_meshes` | | true | true：把网格复制到 `assets/meshes/`；false：用相对路径引用源网格（推荐，源模型在仓库内时）。超过 20 万面的 STL 都会另存一份简化版 |
 | `build.skip_missing_meshes` | | false | 找不到的网格跳过（该零件不显示），不报错 |
 | `build.kv` / `default_force` | | 60 / 40 | 速度执行器增益（手臂很重时加大，如 robot0309 用 800） / URDF 没写 effort 时的力矩上限 |
 | `build.damping` / `armature` | | 0.2 / 0.02 | 书写关节阻尼 / 转子惯量 |

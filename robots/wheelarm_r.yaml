@@ -2,7 +2,7 @@
 name: wheelarm_r
 description: WheelArm right arm, 7-DoF
 train_env: WheelArmRWriting
-model: WheelArmR/assets/wheel_arm_r_write.xml
+model: robots/wheelarm_r/assets/wheel_arm_r_write.xml
 joints: [Link1_R_joint, Link2_R_joint, Link3_R_joint, Link4_R_joint, Link5_R_joint, Link6_R_joint, Link7_R_joint]
 reference: WheelArmR/data/writing_reference.npz
 cache_dir: WheelArmRWriting/data

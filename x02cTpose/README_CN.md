@@ -1,8 +1,8 @@
 # x02cTpose 四关节右臂书写
 
-本模块以 `assets/x2c_TPose.urdf` 为几何依据，保留全身外观，并固定底座、腿部、腰部和左臂。
+本模块以 `robots/x02c_tpose/assets/x2c_TPose.urdf` 为几何依据，保留全身外观，并固定底座、腿部、腰部和左臂。
 仅驱动右肩俯仰、右肩侧摆、右肩偏航和右肘四个关节；原 URDF 的腕部为固定关节。
-原始 URDF 与 `x2cT.xml` 均保留，专用场景为 `assets/right_write.xml`。
+原始 URDF 与 `x2cT.xml` 均保留，专用场景为 `robots/x02c_tpose/assets/right_write.xml`。
 
 ## 直接运行
 
@@ -66,7 +66,7 @@ MUJOCO_GL=egl python -m x02cTpose.write --text 永 --headless \
 python -m x02cTpose.prepare_assets
 ```
 
-生成器从 URDF 读取关节轴、零位变换、限制、惯性和视觉网格，使用已有 `assets/meshes`。
+生成器从 URDF 读取关节轴、零位变换、限制、惯性和视觉网格，使用已有 `robots/x02c_tpose/assets/meshes`。
 T-pose URDF 与原 XML 在肩侧摆、肘部零位和范围上不同，不能混用。
 非受控关节焊接在 URDF 零位，根部固定，不执行全身平衡或站立控制。
 

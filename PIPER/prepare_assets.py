@@ -110,6 +110,6 @@ def prepare(source: Path, destination: Path):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source", type=Path, default=Path("/home/cym/ROS/Arms/agx_arm_sim"))
-    parser.add_argument("--destination", type=Path, default=HERE / "assets")
+    parser.add_argument("--destination", type=Path, default=HERE.parent / "robots/piper/assets")
     args = parser.parse_args()
     prepare(args.source.resolve(), args.destination.resolve())

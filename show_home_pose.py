@@ -11,7 +11,7 @@ import mujoco
 import mujoco.viewer
 import numpy as np
 
-XML_PATH = "SOARM101/SO101/scene_with_table_v.xml"
+XML_PATH = "robots/so101/SO101/scene_with_table_v.xml"
 JOINT_NAMES = ["shoulder_pan", "shoulder_lift", "elbow_flex", "wrist_flex", "wrist_roll", "gripper"]
 
 if __name__ == "__main__":

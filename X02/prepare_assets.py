@@ -3,10 +3,11 @@ from pathlib import Path
 import xml.etree.ElementTree as ET
 
 HERE = Path(__file__).resolve().parent
+ASSETS = HERE.parent / 'robots/x02/assets'
 
 
 def main():
-    tree = ET.parse(HERE / 'assets/urdf/a07.xml')
+    tree = ET.parse(ASSETS / 'urdf/a07.xml')
     root = tree.getroot()
     root.set('model', 'X02_right_arm_writing')
     root.find('compiler').set('meshdir', 'meshes')
@@ -50,7 +51,7 @@ def main():
     ET.SubElement(root, 'keyframe')
     ET.SubElement(root.find('keyframe'), 'key', name='home', qpos='0 0 0 0 0 0 0', ctrl='0 0 0 0 0 0 0')
     ET.indent(tree, space='  ')
-    output = HERE / 'assets/x02_right_write.xml'
+    output = ASSETS / 'x02_right_write.xml'
     tree.write(output, encoding='unicode', xml_declaration=True)
     print(output)
 

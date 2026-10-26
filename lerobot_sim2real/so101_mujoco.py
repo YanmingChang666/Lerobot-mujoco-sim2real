@@ -157,7 +157,8 @@ if __name__ == "__main__":
     # 不能共用同一份场景文件。
     xml_path = os.path.join(
         project_root,
-        "SOARM101",
+        "robots",
+        "so101",
         "SO101",
         "scene_with_table.xml" if control_mode == "position" else "scene_with_table_v.xml",
     )

@@ -200,7 +200,7 @@ if __name__ == "__main__":
     # 示例参数，请替换为您自己的模型信息
     current_script_dir = os.path.dirname(os.path.abspath(__file__))
     project_root = os.path.dirname(current_script_dir)
-    MODEL_XML_PATH = os.path.join(project_root, "SOARM101", "SO101", "scene_with_table.xml")
+    MODEL_XML_PATH = os.path.join(project_root, "robots", "so101", "SO101", "scene_with_table.xml")
     EE_SITE_NAME = "gripperframe"  # 你的XML里定义的夹爪中心的 <site>
     NUM_JOINTS = 5  # 你的机器人关节数量
 

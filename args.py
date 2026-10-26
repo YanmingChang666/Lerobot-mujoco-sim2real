@@ -155,8 +155,8 @@ class Args:
     # 非书写的旧环境（SO-ARM101 原始 Koopman 实验、WheelArmR 空间轨迹实验）的资产布局。
     # 书写机器人不在这里登记：它们由 robots/<name>.yaml 描述，--env 取 YAML 里的 train_env。
     ROBOT_ASSET_LAYOUT = {
-        "SOARM101": {"subdir": "SO101", "scene_file": "scene_with_table_v.xml", "arm_file": "so101_new_calib_v.xml"},
-        "WheelArmR": {"subdir": "assets", "scene_file": "wheel_arm_r.xml", "arm_file": "wheel_arm_r.xml"},
+        "SOARM101": {"model_dir": "robots/so101/SO101", "scene_file": "scene_with_table_v.xml", "arm_file": "so101_new_calib_v.xml"},
+        "WheelArmR": {"model_dir": "robots/wheelarm_r/assets", "scene_file": "wheel_arm_r.xml", "arm_file": "wheel_arm_r.xml"},
     }
 
     def process_args(self):
@@ -178,8 +178,8 @@ class Args:
             self.args.xml_path = self.args.arm_xml_path = str(spec.model)
         elif self.args.env in self.ROBOT_ASSET_LAYOUT:
             layout = self.ROBOT_ASSET_LAYOUT[self.args.env]
-            self.args.xml_path = os.path.join(project_root, self.args.env, layout["subdir"], layout["scene_file"])
-            self.args.arm_xml_path = os.path.join(project_root, self.args.env, layout["subdir"], layout["arm_file"])
+            self.args.xml_path = os.path.join(project_root, layout["model_dir"], layout["scene_file"])
+            self.args.arm_xml_path = os.path.join(project_root, layout["model_dir"], layout["arm_file"])
         else:
             known = sorted(self.ROBOT_ASSET_LAYOUT) + sorted(s.train_env for s in all_robots())
             raise SystemExit(f"Unknown --env {self.args.env!r}. Known: {', '.join(known)}")

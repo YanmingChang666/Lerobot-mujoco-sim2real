@@ -3,7 +3,7 @@ import unittest
 import xml.etree.ElementTree as ET
 import numpy as np
 from .env import TPoseWritingEnv, HERE
-from .prepare_assets import JOINT_NAMES
+from .prepare_assets import JOINT_NAMES, ASSETS
 from .trajectory import plan, solve_ik, SEEDS
 from PIPER.startup import approach_trajectory, approach_action, verify_arrival
 
@@ -12,7 +12,7 @@ class TPoseWritingTest(unittest.TestCase):
     def test_urdf_limits_and_fixed_body(self):
         env=TPoseWritingEnv()
         self.assertEqual((env.model.nq,env.model.nv,env.model.nu),(4,4,4))
-        source=ET.parse(HERE/'assets/x2c_TPose.urdf').getroot()
+        source=ET.parse(ASSETS/'x2c_TPose.urdf').getroot()
         for i,name in enumerate(JOINT_NAMES):
             joint=source.find(f'joint[@name="{name}"]');limit=joint.find('limit')
             np.testing.assert_allclose(env.limits[i],[float(limit.get('lower')),float(limit.get('upper'))])

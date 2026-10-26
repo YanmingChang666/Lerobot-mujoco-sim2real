@@ -9,7 +9,7 @@ import threading
 import mujoco
 import numpy as np
 
-from .env import PiperEnv, HERE, REFERENCE, DT, MAX_SPEED
+from .env import PiperEnv, HERE, MODEL, REFERENCE, DT, MAX_SPEED
 from .trajectory import plan, PEN_ROTATION
 from .visualization import draw_trajectories
 from .startup import HOME_DEG, approach_trajectory, approach_action, verify_arrival
@@ -90,7 +90,7 @@ def main(*, env_factory=PiperEnv, planner=plan, here=HERE, reference=REFERENCE,
          model_file=None, center=(.30, 0), height=0., home_deg=HOME_DEG, metadata_name="piper_data.json", camera_distance=1.1, camera_height=None,
          output_dir=None, hanzi_data=None, argv=None, prog=None, robot_name=None,
          rotation_deg=0., pen_yaw_deg=0., approach_seconds=5.):
-    model_file = Path(model_file or here / "assets/piper.xml")
+    model_file = Path(model_file or MODEL)
     udim, xdim = len(home_deg), len(home_deg)+3
     parser = argparse.ArgumentParser(prog=prog, description=f"{robot_name or here.name} Chinese/English writing simulation")
     parser.add_argument("--mode", choices=["plan", "baseline", "mpc"], default="baseline")

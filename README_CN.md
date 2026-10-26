@@ -39,7 +39,9 @@
 ├── SOARM101/                 # MuJoCo 仿真环境
 │   ├── SOARM101_Env.py       # Gymnasium 风格环境封装
 │   ├── SOARM101_DataCollection.py  # 数据采集脚本
-│   └── SO101/                # 机器人 URDF/XML 模型
+│   └── (模型在 robots/so101/SO101/)
+├── robots/                   # 全部机器人模型（URDF/MJCF/网格）与书写配置 *.yaml
+├── writing/                  # 通用书写框架：python -m writing --robot <名字>
 ├── models/                   # Koopman 网络实现
 │   ├── base_model.py         # KoopmanNet 基类
 │   ├── KoopmanBase.py        # DKUC/DBKN 线性/双线性模型
@@ -199,7 +201,7 @@ python IBKN_UKF.py --model IBKN --suffix wide_range
 python DBKN_KESO.py --model DBKN --suffix wide_range
 ```
 
-改动前记得检查物理关节限位（`SOARM101/SO101/so101_new_calib_v.xml` 里每个 `<joint>` 的 `range` 属性），新的扰动范围要留在限位以内。
+改动前记得检查物理关节限位（`robots/so101/SO101/so101_new_calib_v.xml` 里每个 `<joint>` 的 `range` 属性），新的扰动范围要留在限位以内。
 
 ## ✍️ 写汉字（多笔画：抬笔 -> 平移 -> 落笔）
 

@@ -6,7 +6,7 @@ from pathlib import Path
 
 import mujoco
 import numpy as np
-from .env import X02WritingEnv, HERE
+from .env import X02WritingEnv, HERE, ASSETS
 from .trajectory import plan, solve_ik, SEED, PEN_ROTATION
 from PIPER.startup import approach_trajectory, approach_action, verify_arrival
 
@@ -15,8 +15,8 @@ class X02WritingTest(unittest.TestCase):
     def test_portable_assets_and_fixed_left_arm(self):
         with tempfile.TemporaryDirectory() as directory:
             destination = Path(directory)
-            shutil.copy(HERE / 'assets/x02_right_write.xml', destination)
-            shutil.copytree(HERE / 'assets/meshes', destination / 'meshes')
+            shutil.copy(ASSETS / 'x02_right_write.xml', destination)
+            shutil.copytree(ASSETS / 'meshes', destination / 'meshes')
             model = mujoco.MjModel.from_xml_path(str(destination / 'x02_right_write.xml'))
             self.assertEqual((model.nq, model.nv, model.nu), (7, 7, 7))
             for i in range(1, 8):

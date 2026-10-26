@@ -1,5 +1,5 @@
 # robot0309 整机（轮腿底盘 + 升降 + 头 + 双臂），只用右臂 rr51_1..6（6 轴）书写，其余关节固定在 0。
-# 生成模型：python -m writing.build_model --robot robot0309_r
+# 模型已随仓库提供；修改 build: 后重新生成：python -m writing.build_model --robot robot0309_r
 name: robot0309_r
 description: robot0309 full model, right arm rr51 6-DoF (others fixed)
 train_env: Robot0309RWriting
@@ -14,7 +14,8 @@ ik:
   seeds:
     - [1.491933, -1.026239, 2.149277, 1.492146, 0.614997, -1.43322]
 build:
-  urdf: robot0309/urdf/robot0309_with_gripper.urdf
+  urdf: robots/robot0309_r/source/robot0309/urdf/robot0309_with_gripper.urdf
+  copy_meshes: false           # 模型直接引用 source/ 下的网格，不重复复制（只有超限的底座网格另存简化版）
   kv: 800                      # 手臂很重（肩关节惯量约 6.5 kg·m²），速度环增益要比轻型臂大
   skip_missing_meshes: true    # 夹爪网格 package://Servogripper1010 不在本机，只显示笔
   pen:

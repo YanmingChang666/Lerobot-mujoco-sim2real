@@ -2,7 +2,7 @@
 name: piper
 description: AgileX Piper 6-DoF arm with gripper
 train_env: PIPER
-model: PIPER/assets/piper.xml
+model: robots/piper/assets/piper.xml
 joints: [joint1, joint2, joint3, joint4, joint5, joint6]
 reference: PIPER/data/reference.npz
 cache_dir: PIPER/data

@@ -7,7 +7,7 @@ from pathlib import Path
 import mujoco
 import numpy as np
 
-from .env import PiperEnv, HERE, DT
+from .env import PiperEnv, HERE, MODEL, DT
 from .trajectory import plan, solve_ik, PEN_ROTATION
 from .startup import HOME_DEG, approach_trajectory, approach_action, verify_arrival
 
@@ -45,7 +45,7 @@ class PiperWorkflowTest(unittest.TestCase):
     def test_assets_are_relocatable(self):
         with tempfile.TemporaryDirectory() as directory:
             dst = Path(directory) / "assets"
-            shutil.copytree(HERE / "assets", dst)
+            shutil.copytree(MODEL.parent, dst)
             model = mujoco.MjModel.from_xml_path(str(dst / "piper.xml"))
             self.assertEqual((model.nq, model.nv, model.nu), (6, 6, 6))
             self.assertEqual(model.nmesh, 11)

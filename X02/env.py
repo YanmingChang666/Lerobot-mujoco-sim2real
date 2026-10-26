@@ -2,7 +2,8 @@
 from pathlib import Path
 from PIPER.env import PiperEnv, DT, MAX_SPEED
 HERE = Path(__file__).resolve().parent
-MODEL = HERE / 'assets/x02_right_write.xml'
+ASSETS = HERE.parent / 'robots/x02/assets'
+MODEL = ASSETS / 'x02_right_write.xml'
 REFERENCE = HERE / 'data/writing_reference.npz'
 
 

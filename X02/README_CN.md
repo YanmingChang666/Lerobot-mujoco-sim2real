@@ -3,7 +3,7 @@
 [全部机械臂使用教程与命令速查](../docs/机械臂书写使用教程.md)
 
 
-使用本目录提供的 `assets/urdf/a07.xml` 双臂模型，控制右臂 `joint1_r` 至
+使用 `robots/x02/assets/urdf/a07.xml` 双臂模型，控制右臂 `joint1_r` 至
 `joint7_r`，保留躯干和左臂外观，左臂固定在原模型零位。
 复用 Piper/WheelArmR 的笔画规划、连续姿态逆解、5 秒进场、红绿轨迹和 DBKN/MPC 流程。
 
@@ -53,8 +53,8 @@ X02 第六关节只有约 ±0.52 rad、第七关节约 ±1.3 rad；不能直接�
 调整 `--center`、`--height`、`--size` 后会重新做 IK 与速度检查；不可达则拒绝执行。
 改变初始角度后，若 5 秒不足以满足速度限制，需要增加 `--approach-seconds`。
 
-`assets/x02_right_write.xml` 是专用书写模型，原始 URDF/MJCF 未修改。
-网格相对引用 `assets/meshes`，无需移动或重复复制 STL。重新生成模型：
+`robots/x02/assets/x02_right_write.xml` 是专用书写模型，原始 URDF/MJCF 未修改。
+网格相对引用 `robots/x02/assets/meshes`，无需移动或重复复制 STL。重新生成模型：
 
 ```bash
 python -m X02.prepare_assets

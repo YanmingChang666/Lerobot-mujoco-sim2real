@@ -4,7 +4,7 @@
 
 
 本目录按 `PIPER` 的流程增加了完整的汉字书写入口。原七轴右臂 STL
-直接由 `assets/wheel_arm_r_write.xml` 相对引用，不需要移动或重复复制网格。
+直接由 `robots/wheelarm_r/assets/wheel_arm_r_write.xml` 相对引用，不需要移动或重复复制网格。
 
 ## 原来为什么不能正常书写
 
@@ -92,7 +92,7 @@ MPC 显式约束关节速度为 ±0.5 rad/s，加载时校验模型哈希、周�
 
 | 文件 | 用途 |
 |---|---|
-| `assets/wheel_arm_r_write.xml` | 七轴书写模型、笔尖和纸面 |
+| `robots/wheelarm_r/assets/wheel_arm_r_write.xml` | 七轴书写模型、笔尖和纸面 |
 | `env.py` | 七轴仿真接口 |
 | `trajectory.py` | 七轴姿态 IK；复用 Piper 多笔画时间规划 |
 | `write.py` | 基线/MPC、5 秒启动与红绿显示入口 |

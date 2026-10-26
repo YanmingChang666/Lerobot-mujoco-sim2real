@@ -11,7 +11,7 @@
 
 - 复制 11 个 STL：`base_link.stl`、`link1.stl` 到 `link6.stl`，以及
   `flange.stl`、`gripper_base.stl`、`gripper_link1.stl`、`gripper_link2.stl`。
-  源目录保持原样。模型、STL、来源清单及许可证在 `PIPER/assets/`。
+  源目录保持原样。模型、STL、来源清单及许可证在 `robots/piper/assets/`。
 - 从标准 Piper URDF 导入关节原点、轴、限位和惯性，生成相对 mesh 路径的 MJCF。
   DAE 外观改用对应 STL，因此不保留原 DAE 的材质颜色。
 - 六个臂关节为 `joint1`…`joint6`，不把其中任何一个当夹爪。
@@ -60,10 +60,10 @@ python -m PIPER.prepare_assets \
   --source /home/cym/ROS/Arms/agx_arm_sim
 ```
 
-默认目标是 `PIPER/assets/`，路径结构：
+默认目标是 `robots/piper/assets/`，路径结构：
 
 ```text
-PIPER/
+robots/piper/
   assets/
     meshes/{base_link,link1,link2,link3,link4,link5,link6}.stl
     meshes/{flange,gripper_base,gripper_link1,gripper_link2}.stl
@@ -81,7 +81,7 @@ PIPER/
   outputs/                    # 轨迹、误差图、JSON 指标
 ```
 
-资源脚本支持 `--destination`，但运行入口默认读取 `PIPER/assets/piper.xml`；
+资源脚本支持 `--destination`，但运行入口默认读取 `robots/piper/assets/piper.xml`；
 如改变资源目标，还需同步 `PIPER/env.py` 的 MODEL 和 `args.py` 的 PIPER 资产映射。
 建议先保持默认目录。生成脚本会覆盖目标目录内同名的生成资源，不改变源模型。
 

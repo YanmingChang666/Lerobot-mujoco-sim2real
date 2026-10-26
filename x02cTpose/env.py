@@ -3,7 +3,7 @@ from pathlib import Path
 from PIPER.env import PiperEnv, DT, MAX_SPEED
 from .prepare_assets import JOINT_NAMES
 HERE=Path(__file__).resolve().parent
-MODEL=HERE/'assets/right_write.xml'
+MODEL=HERE.parent/'robots/x02c_tpose/assets/right_write.xml'
 REFERENCE=HERE/'data/writing_reference.npz'
 
 class TPoseWritingEnv(PiperEnv):

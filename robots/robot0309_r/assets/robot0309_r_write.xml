@@ -1,0 +1,197 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mujoco model="robot0309_r_writing">
+  <compiler angle="radian" boundmass="0.0001" boundinertia="1e-07" />
+  <option timestep=".002" integrator="implicitfast" />
+  <asset>
+    <mesh name="base_link" file="meshes/base_link.STL" />
+    <mesh name="lfu_Link" file="../source/robot0309/meshes/lfu_Link.STL" />
+    <mesh name="lfd_Link" file="../source/robot0309/meshes/lfd_Link.STL" />
+    <mesh name="lbu_Link" file="../source/robot0309/meshes/lbu_Link.STL" />
+    <mesh name="lbd_Link" file="../source/robot0309/meshes/lbd_Link.STL" />
+    <mesh name="rfu_Link" file="../source/robot0309/meshes/rfu_Link.STL" />
+    <mesh name="rfd_Link" file="../source/robot0309/meshes/rfd_Link.STL" />
+    <mesh name="rbu_Link" file="../source/robot0309/meshes/rbu_Link.STL" />
+    <mesh name="rbd_Link" file="../source/robot0309/meshes/rbd_Link.STL" />
+    <mesh name="rl_Link" file="../source/robot0309/meshes/rl_Link.STL" />
+    <mesh name="rr_Link" file="../source/robot0309/meshes/rr_Link.STL" />
+    <mesh name="rr51_1_Link" file="../source/robot0309/meshes/rr51_1_Link.STL" />
+    <mesh name="rr51_2_Link" file="../source/robot0309/meshes/rr51_2_Link.STL" />
+    <mesh name="rr51_3_Link" file="../source/robot0309/meshes/rr51_3_Link.STL" />
+    <mesh name="rr51_4_Link" file="../source/robot0309/meshes/rr51_4_Link.STL" />
+    <mesh name="rr51_5_Link" file="../source/robot0309/meshes/rr51_5_Link.STL" />
+    <mesh name="rr51_6_Link" file="../source/robot0309/meshes/rr51_6_Link.STL" />
+    <mesh name="lr_Link" file="../source/robot0309/meshes/lr_Link.STL" />
+    <mesh name="lr52_1_Link" file="../source/robot0309/meshes/lr52_1_Link.STL" />
+    <mesh name="lr52_2_Link" file="../source/robot0309/meshes/lr52_2_Link.STL" />
+    <mesh name="lr52_3_Link" file="../source/robot0309/meshes/lr52_3_Link.STL" />
+    <mesh name="lr52_4_Link" file="../source/robot0309/meshes/lr52_4_Link.STL" />
+    <mesh name="lr52_5_Link" file="../source/robot0309/meshes/lr52_5_Link.STL" />
+    <mesh name="lr52_6_Link" file="../source/robot0309/meshes/lr52_6_Link.STL" />
+    <mesh name="ca_Link" file="../source/robot0309/meshes/ca_Link.STL" />
+    <mesh name="ca53_1_Link" file="../source/robot0309/meshes/ca53_1_Link.STL" />
+    <mesh name="tool_Link" file="../source/robot0309/meshes/tool_Link.STL" />
+    <mesh name="D60_Link" file="../source/robot0309/meshes/D60_Link.STL" />
+    <mesh name="D70_Link" file="../source/robot0309/meshes/D70_Link.STL" />
+    <mesh name="D80_Link" file="../source/robot0309/meshes/D80_Link.STL" />
+    <mesh name="D90_Link" file="../source/robot0309/meshes/D90_Link.STL" />
+  </asset>
+  <worldbody>
+    <body name="base_link" gravcomp="1">
+      <inertial pos="-0.054643 -0.14093 0.54979" quat="0.506341 0.50149 -0.497097 0.494996" mass="1175.9" diaginertia="55.6055 50.0644 34.5201" />
+      <geom name="base_link_visual0" type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.64706 0.61961 0.58824 1" mesh="base_link" />
+      <body name="lfu_Link" pos="0.235 -0.424 0.1895" gravcomp="1">
+        <inertial pos="-0.010115 -0.014553 -0.084051" quat="0.0121924 0.706988 -0.0202492 0.70683" mass="31.912" diaginertia="0.0705426 0.0657117 0.0503286" />
+        <geom name="lfu_Link_visual0" type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.64706 0.61961 0.58824 1" mesh="lfu_Link" />
+        <body name="lfd_Link" pos="0 0 -0.112" gravcomp="1">
+          <inertial pos="0 0 0" quat="0.707107 0 0 0.707107" mass="2.2744" diaginertia="0.012428 0.0066722 0.0066722" />
+          <geom name="lfd_Link_visual0" type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.64706 0.61961 0.58824 1" mesh="lfd_Link" />
+        </body>
+      </body>
+      <body name="lbu_Link" pos="-0.235 -0.424 0.19" gravcomp="1">
+        <inertial pos="0.010115 0.014553 -0.084551" quat="0.0202492 0.70683 -0.0121924 0.706988" mass="31.912" diaginertia="0.0705426 0.0657117 0.0503286" />
+        <geom name="lbu_Link_visual0" type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.64706 0.61961 0.58824 1" mesh="lbu_Link" />
+        <body name="lbd_Link" pos="0 0 -0.1125" gravcomp="1">
+          <inertial pos="0 0 0" quat="0.707107 0 0 0.707107" mass="2.2744" diaginertia="0.012428 0.0066722 0.0066722" />
+          <geom name="lbd_Link_visual0" type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.64706 0.61961 0.58824 1" mesh="lbd_Link" />
+        </body>
+      </body>
+      <body name="rfu_Link" pos="0.235 0.424 0.1895" gravcomp="1">
+        <inertial pos="-0.0101145 -0.0145528 -0.0840515" quat="0.0121918 0.706988 -0.0202496 0.70683" mass="31.9115" diaginertia="0.0705424 0.0657121 0.0503288" />
+        <geom name="rfu_Link_visual0" type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.647059 0.619608 0.588235 1" mesh="rfu_Link" />
+        <body name="rfd_Link" pos="0 0 -0.112" gravcomp="1">
+          <inertial pos="0 0 0" quat="0.707107 0 0 0.707107" mass="2.27438" diaginertia="0.0124275 0.00667217 0.00667217" />
+          <geom name="rfd_Link_visual0" type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.647059 0.619608 0.588235 1" mesh="rfd_Link" />
+        </body>
+      </body>
+      <body name="rbu_Link" pos="-0.235 0.424 0.1895" gravcomp="1">
+        <inertial pos="0.0101145 0.0145528 -0.0840515" quat="0.0202496 0.70683 -0.0121918 0.706988" mass="31.9115" diaginertia="0.0705424 0.0657121 0.0503288" />
+        <geom name="rbu_Link_visual0" type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.647059 0.619608 0.588235 1" mesh="rbu_Link" />
+        <body name="rbd_Link" pos="0 0 -0.112" gravcomp="1">
+          <inertial pos="0 0 0" quat="0.707107 0 0 0.707107" mass="2.27438" diaginertia="0.0124275 0.00667217 0.00667217" />
+          <geom name="rbd_Link_visual0" type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.647059 0.619608 0.588235 1" mesh="rbd_Link" />
+        </body>
+      </body>
+      <body name="rl_Link" pos="0.096 0 0.6735" gravcomp="1">
+        <inertial pos="0.0113753 -2.17982e-05 0.574032" quat="0.499975 0.500023 -0.499977 0.500025" mass="54.8496" diaginertia="1.79159 1.61026 1.24688" />
+        <geom name="rl_Link_visual0" type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.752941 0.752941 0.752941 1" mesh="rl_Link" />
+        <body name="rr_Link" pos="-0.00012323 0.22915 0.85641" quat="0.887011 -0.461748 0 0" gravcomp="1">
+          <inertial pos="0.000227833 -0.00194628 0.0659744" quat="0.00277757 0.707841 0.000815174 0.706366" mass="2.56223" diaginertia="0.0107753 0.00799401 0.00708043" />
+          <geom name="rr_Link_visual0" type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.866667 0.866667 0.890196 1" mesh="rr_Link" />
+          <body name="rr51_1_Link" pos="0.00012323 -0.0020049 0.1015" gravcomp="1">
+            <inertial pos="0.0101987 8.5899e-06 0.087734" quat="-0.000186055 0.450645 1.15063e-05 0.892703" mass="3.62377" diaginertia="0.0129428 0.0117478 0.00990701" />
+            <joint name="rr51_1_joint" pos="0 0 0" axis="0 0 1" range="-6.28 6.28" actuatorfrcrange="-330 330" limited="true" damping="0.2" armature="0.02" frictionloss="0" />
+            <geom name="rr51_1_Link_visual0" type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="1 1 1 1" mesh="rr51_1_Link" />
+            <body name="rr51_2_Link" pos="0.089 0 0.0915" gravcomp="1">
+              <inertial pos="0.0903009 -3.51836e-06 0.226976" quat="0.99996 1.73854e-05 0.0086591 0.00200768" mass="10.0249" diaginertia="0.0826013 0.0824378 0.0231081" />
+              <joint name="rr51_2_joint" pos="0 0 0" axis="-1 0 0" range="-6.28 6.28" actuatorfrcrange="-330 330" limited="true" damping="0.2" armature="0.02" frictionloss="0" />
+              <geom name="rr51_2_Link_visual0" type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="1 1 1 1" mesh="rr51_2_Link" />
+              <body name="rr51_3_Link" pos="0.0209 0 0.552" gravcomp="1">
+                <inertial pos="-0.0646821 3.27595e-06 0.192791" quat="0.707291 -0.00799687 -0.00800584 0.706832" mass="4.1458" diaginertia="0.021426 0.0210079 0.00570721" />
+                <joint name="rr51_3_joint" pos="0 0 0" axis="1 0 0" range="-6.28 6.28" actuatorfrcrange="-150 150" limited="true" damping="0.2" armature="0.02" frictionloss="0" />
+                <geom name="rr51_3_Link_visual0" type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="1 1 1 1" mesh="rr51_3_Link" />
+                <body name="rr51_4_Link" pos="-0.0031 0 0.43" gravcomp="1">
+                  <inertial pos="0.0590078 -4.40533e-06 0.00411178" quat="0.637493 0.306224 0.306552 0.637068" mass="0.943385" diaginertia="0.00142966 0.00138151 0.000978206" />
+                  <joint name="rr51_4_joint" pos="0 0 0" axis="-1 0 0" range="-6.28 6.28" actuatorfrcrange="-56 56" limited="true" damping="0.2" armature="0.02" frictionloss="0" />
+                  <geom name="rr51_4_Link_visual0" type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.792157 0.819608 0.933333 1" mesh="rr51_4_Link" />
+                  <body name="rr51_5_Link" pos="0.0707 0 0.0673" gravcomp="1">
+                    <inertial pos="0.0047051 3.34128e-06 0.0460753" quat="8.10393e-05 0.497025 -8.42904e-05 0.867736" mass="0.824453" diaginertia="0.00107183 0.00105434 0.000799988" />
+                    <joint name="rr51_5_joint" pos="0 0 0" axis="0 0 -1" range="-6.28 6.28" actuatorfrcrange="-56 56" limited="true" damping="0.2" armature="0.02" frictionloss="0" />
+                    <geom name="rr51_5_Link_visual0" type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.792157 0.819608 0.933333 1" mesh="rr51_5_Link" />
+                    <body name="rr51_6_Link" pos="0.0673 0 0.0507" gravcomp="1">
+                      <inertial pos="0.0692567 -0.00041878 -0.0398155" quat="0.746078 0.661838 -0.0524589 0.0508496" mass="1.74606" diaginertia="0.00163041 0.00100275 0.000990404" />
+                      <joint name="rr51_6_joint" pos="0 0 0" axis="-1 0 0" range="-6.28 6.28" actuatorfrcrange="-56 56" limited="true" damping="0.2" armature="0.02" frictionloss="0" />
+                      <geom name="rr51_6_Link_visual0" type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.752941 0.752941 0.752941 1" mesh="rr51_6_Link" />
+                      <body name="sg_base_link" pos="0.097 0 0" quat="0.499998 -0.5 -0.500002 0.5" gravcomp="1">
+                        <inertial pos="-0.0004763 -0.01651 -0.18922" quat="0.705394 -0.0166908 0.0186849 0.708372" mass="6.1346" diaginertia="0.00644459 0.006008 0.00481381" />
+                        <body name="sg_SG10_Link" pos="-0.00026448 -0.062261 -0.26247" quat="0.996195 0.0871543 0 0" gravcomp="1">
+                          <inertial pos="3.0454e-05 9.103e-05 0.011256" quat="0.706554 -0.000986643 -0.000434597 0.707658" mass="0.66437" diaginertia="0.00010577 0.0001014 1.04646e-05" />
+                        </body>
+                        <body name="sg_SG20_Link" pos="-1.4482e-05 -0.017637 -0.281" gravcomp="1">
+                          <inertial pos="0.036746 0.0032098 -0.016909" quat="0.977965 -0.127748 0.0395425 0.160315" mass="0.087583" diaginertia="1.91441e-05 1.6463e-05 6.13511e-06" />
+                        </body>
+                        <body name="sg_SG30_Link" pos="-1.4482e-05 -0.017637 -0.281" gravcomp="1">
+                          <inertial pos="-0.036746 -0.0032098 -0.016909" quat="0.977965 0.127748 -0.0395425 0.160315" mass="0.087583" diaginertia="1.91441e-05 1.6463e-05 6.13511e-06" />
+                        </body>
+                        <geom name="pen" type="capsule" fromto="0 -0.0176 -0.25 0 -0.0176 -0.35" size=".003" mass=".01" rgba=".12 .12 .12 1" contype="0" conaffinity="0" />
+                        <site name="pen_tip" pos="0 -0.0176 -0.35" quat="0 0 1 0" size=".003" rgba="0 0 1 1" />
+                      </body>
+                    </body>
+                  </body>
+                </body>
+              </body>
+            </body>
+          </body>
+        </body>
+        <body name="lr_Link" pos="0.00012323 -0.22915 0.85641" quat="0.887011 0.461748 0 0" gravcomp="1">
+          <inertial pos="-0.000227833 0.00194628 0.0659744" quat="-0.000815174 0.706366 -0.00277757 0.707841" mass="2.56223" diaginertia="0.0107753 0.00799401 0.00708043" />
+          <geom name="lr_Link_visual0" type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.866667 0.866667 0.890196 1" mesh="lr_Link" />
+          <body name="lr52_1_Link" pos="-0.00012323 0.0020049 0.1015" gravcomp="1">
+            <inertial pos="0.0101957 0.000248833 0.087734" quat="-0.0107016 0.450613 0.00531985 0.892639" mass="3.62377" diaginertia="0.0129428 0.0117478 0.009907" />
+            <geom name="lr52_1_Link_visual0" type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="1 1 1 1" mesh="lr52_1_Link" />
+            <body name="lr52_2_Link" pos="0.088975 0.0020966 0.0915" gravcomp="1">
+              <inertial pos="0.0899492 0.01599 0.226552" quat="0.999405 -0.0306521 0.00835444 0.0134586" mass="10.0248" diaginertia="0.0826013 0.0824378 0.0231081" />
+              <geom name="lr52_2_Link_visual0" type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="1 1 1 1" mesh="lr52_2_Link" />
+              <body name="lr52_3_Link" pos="0.0201 0.034215 0.55097" gravcomp="1">
+                <inertial pos="-0.0646531 -0.00199759 0.19279" quat="0.698928 -0.00701597 -0.00896429 0.715101" mass="4.14581" diaginertia="0.021426 0.0210079 0.00570721" />
+                <geom name="lr52_3_Link_visual0" type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="1 1 1 1" mesh="lr52_3_Link" />
+                <body name="lr52_4_Link" pos="-0.0030741 -0.0011374 0.43" gravcomp="1">
+                  <inertial pos="0.0589906 0.00142583 0.00411167" quat="0.631462 0.29944 0.313207 0.643034" mass="0.943381" diaginertia="0.00142966 0.00138151 0.000978197" />
+                  <geom name="lr52_4_Link_visual0" type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.792157 0.819608 0.933333 1" mesh="lr52_4_Link" />
+                  <body name="lr52_5_Link" pos="0.070665 0.0023208 0.067297" gravcomp="1">
+                    <inertial pos="0.00469416 0.000392271 0.0460748" quat="0.00804695 0.496882 0.000988894 0.86778" mass="0.824453" diaginertia="0.00107183 0.00105434 0.000799989" />
+                    <geom name="lr52_5_Link_visual0" type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.792157 0.819608 0.933333 1" mesh="lr52_5_Link" />
+                    <body name="lr52_6_Link" pos="0.067283 -0.00036262 0.050721" gravcomp="1">
+                      <inertial pos="0.0690885 -0.00154731 -0.0384839" quat="0.789799 0.608769 -0.0638276 0.0392902" mass="1.74475" diaginertia="0.00161549 0.000998828 0.000976881" />
+                      <geom name="lr52_6_Link_visual0" type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.752941 0.752941 0.752941 1" mesh="lr52_6_Link" />
+                    </body>
+                  </body>
+                </body>
+              </body>
+            </body>
+          </body>
+        </body>
+        <body name="ca_Link" pos="0.1458 0.00028625 0.954" gravcomp="1">
+          <inertial pos="-0.000463004 -0.000966798 0.0294873" quat="0.4963 0.503673 -0.503673 0.4963" mass="1.28248" diaginertia="0.00374595 0.00311855 0.0015039" />
+          <geom name="ca_Link_visual0" type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.686275 0.686275 0.686275 1" mesh="ca_Link" />
+          <body name="ca53_1_Link" pos="2.3076e-05 0.054714 0.244" gravcomp="1">
+            <inertial pos="-0.0247415 -0.046631 -0.125513" quat="0.726753 0.686812 -0.00803395 0.00740325" mass="1.43158" diaginertia="0.00922161 0.00865897 0.00183362" />
+            <geom name="ca53_1_Link_visual0" type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="1 1 1 1" mesh="ca53_1_Link" />
+          </body>
+        </body>
+        <body name="tool_Link" pos="-0.088937 0 0.954" gravcomp="1">
+          <inertial pos="-0.00356883 0.000709077 0.0487501" quat="0.499375 0.49747 -0.502194 0.50095" mass="11.7584" diaginertia="0.0773442 0.0584175 0.0230575" />
+          <geom name="tool_Link_visual0" type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.752941 0.752941 0.752941 1" mesh="tool_Link" />
+        </body>
+      </body>
+      <body name="D60_Link" pos="0.37 -0.3035 0.375" gravcomp="1">
+        <inertial pos="0.004438 0.301955 0.22851" quat="0.707104 0.70711 1.16538e-05 2.19301e-05" mass="3.93841" diaginertia="0.214379 0.13738 0.0770942" />
+        <geom name="D60_Link_visual0" type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.647059 0.619608 0.588235 1" mesh="D60_Link" />
+      </body>
+      <body name="D70_Link" pos="0.221 0.59 0.375" gravcomp="1">
+        <inertial pos="-0.221 0.0041548 0.22851" quat="0.495977 0.503999 0.503981 0.49598" mass="2.7545" diaginertia="0.11075 0.05543 0.055397" />
+        <geom name="D70_Link_visual0" type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.64706 0.61961 0.58824 1" mesh="D70_Link" />
+      </body>
+      <body name="D80_Link" pos="-0.37 -0.3035 0.375" gravcomp="1">
+        <inertial pos="-0.0042097 0.31593 0.22859" quat="0.707081 0.707133 4.46812e-05 -4.13419e-05" mass="3.7879" diaginertia="0.20476 0.13117 0.073698" />
+        <geom name="D80_Link_visual0" type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.64706 0.61961 0.58824 1" mesh="D80_Link" />
+      </body>
+      <body name="D90_Link" pos="0.221 -0.59 0.375" gravcomp="1">
+        <inertial pos="-0.231728 -0.00402042 0.228611" quat="0.704182 -0.0643996 -0.0642832 0.704164" mass="2.92636" diaginertia="0.110829 0.0554747 0.055451" />
+        <geom name="D90_Link_visual0" type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.647059 0.619608 0.588235 1" mesh="D90_Link" />
+      </body>
+    </body>
+    <light pos="0 -1 3" dir="0 .3 -1" directional="true" castshadow="false" />
+    <geom name="paper" type="box" pos="0.7 0.3 0.898" size=".13 .13 .002" rgba=".97 .97 .94 1" contype="0" conaffinity="0" />
+  </worldbody>
+  <actuator>
+    <velocity name="rr51_1_joint" joint="rr51_1_joint" kv="800" ctrlrange="-0.5 0.5" forcerange="-330 330" />
+    <velocity name="rr51_2_joint" joint="rr51_2_joint" kv="800" ctrlrange="-0.5 0.5" forcerange="-330 330" />
+    <velocity name="rr51_3_joint" joint="rr51_3_joint" kv="800" ctrlrange="-0.5 0.5" forcerange="-150 150" />
+    <velocity name="rr51_4_joint" joint="rr51_4_joint" kv="800" ctrlrange="-0.5 0.5" forcerange="-56 56" />
+    <velocity name="rr51_5_joint" joint="rr51_5_joint" kv="800" ctrlrange="-0.5 0.5" forcerange="-56 56" />
+    <velocity name="rr51_6_joint" joint="rr51_6_joint" kv="800" ctrlrange="-0.5 0.5" forcerange="-56 56" />
+  </actuator>
+  <keyframe>
+    <key name="home" qpos="0 0 0 0 0 0" ctrl="0 0 0 0 0 0" />
+  </keyframe>
+</mujoco>

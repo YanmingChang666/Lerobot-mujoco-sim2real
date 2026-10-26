@@ -1,6 +1,6 @@
 # SO-ARM101 五轴臂，用通用框架书写（与旧的 write_demo.py / SOARM101 训练环境相互独立）。
 # 5 个关节：自动采用 pen_axis 模式，笔保持竖直，绕笔自转由 wrist_roll 自由决定。
-# 生成模型：python -m writing.build_model --robot so101
+# 模型已随仓库提供；修改 build: 后重新生成：python -m writing.build_model --robot so101
 name: so101
 description: SO-ARM101 5-DoF arm, pen in gripper (generic, YAML only)
 train_env: SO101Writing
@@ -15,7 +15,8 @@ ik:
   seeds:
     - [-0.087763, 0.10872, -0.098046, 1.560253, 0.02428]
 build:
-  urdf: SOARM101/SO101/so101_new_calib.urdf
+  urdf: robots/so101/SO101/so101_new_calib.urdf
+  copy_meshes: false
   floor_height: -0.003
   kv: 20
   pen:

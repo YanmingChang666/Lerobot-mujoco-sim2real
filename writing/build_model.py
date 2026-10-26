@@ -11,6 +11,7 @@ What the generated model contains (the conventions every writing robot follows):
   * a pen capsule and a `pen_tip` site whose +Z points along the pen, plus a `paper` box
 """
 import argparse
+import os
 import shutil
 import tempfile
 import xml.etree.ElementTree as ET
@@ -102,7 +103,7 @@ def inspect_urdf(urdf):
     print("Leaf links (candidates for build.pen.link):", ", ".join(leaves))
 
 
-def prepare_urdf(urdf, mesh_dir, package_dirs, copy_meshes, skip_missing=False):
+def prepare_urdf(urdf, mesh_dir, package_dirs, copy_meshes, skip_missing=False, simplified_dir=None):
     """Rewrite mesh paths and drop duplicate collision geometry; return the edited tree."""
     tree = ET.parse(urdf)
     root = tree.getroot()
@@ -133,9 +134,13 @@ def prepare_urdf(urdf, mesh_dir, package_dirs, copy_meshes, skip_missing=False):
                 link.remove(element)
                 continue
             if not copy_meshes:
+                # Reference the source mesh in place (made relative after import);
+                # only meshes over MuJoCo's face limit get a simplified copy.
                 if (binary_stl_faces(source) or 0) > MAX_FACES:
-                    raise ValueError(f"{source.name} has more than {MAX_FACES} triangles; "
-                                     "set build.copy_meshes: true so it can be simplified")
+                    simplified_dir.mkdir(parents=True, exist_ok=True)
+                    target = simplified_dir / source.name
+                    copy_mesh(source, target)
+                    source = target
                 mesh.set("filename", str(source.resolve()))
                 continue
             key = source.resolve()
@@ -274,7 +279,7 @@ def build(spec, log=print):
     with tempfile.TemporaryDirectory() as directory:
         work_mesh_dir = mesh_dir if copy_meshes else Path(directory)
         tree = prepare_urdf(urdf, work_mesh_dir, cfg.get("package_dirs") or {}, copy_meshes,
-                            cfg.get("skip_missing_meshes", False))
+                            cfg.get("skip_missing_meshes", False), simplified_dir=mesh_dir)
         temp_urdf = Path(directory) / "robot.urdf"
         tree.write(temp_urdf, encoding="unicode")
         imported = mujoco.MjModel.from_xml_path(str(temp_urdf))
@@ -287,8 +292,12 @@ def build(spec, log=print):
     compiler.set("angle", "radian")
     if copy_meshes:
         compiler.set("meshdir", "meshes")
-    elif "meshdir" in compiler.attrib:
-        del compiler.attrib["meshdir"]
+    else:
+        compiler.attrib.pop("meshdir", None)
+        # Mesh paths relative to the model file, so the repository can be moved or cloned.
+        for mesh in root.iter("mesh"):
+            if mesh.get("file") and Path(mesh.get("file")).is_absolute():
+                mesh.set("file", os.path.relpath(mesh.get("file"), output.parent))
     option = root.find("option")
     if option is None:
         option = ET.Element("option")

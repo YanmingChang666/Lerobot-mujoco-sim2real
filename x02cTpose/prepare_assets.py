@@ -4,6 +4,7 @@ import xml.etree.ElementTree as ET
 import numpy as np
 from scipy.spatial.transform import Rotation
 HERE = Path(__file__).resolve().parent
+ASSETS = HERE.parent / 'robots/x02c_tpose/assets'
 JOINT_NAMES = ['right_shoulder_pitch_joint', 'right_shoulder_roll_joint',
                'right_shoulder_yaw_joint', 'right_elbow_joint']
 
@@ -16,7 +17,7 @@ def origin(element):
 
 
 def main():
-    source = ET.parse(HERE/'assets/x2c_TPose.urdf').getroot()
+    source = ET.parse(ASSETS/'x2c_TPose.urdf').getroot()
     links = {l.get('name'): l for l in source.findall('link')}
     children = {}
     child_names = set()
@@ -71,7 +72,7 @@ def main():
         ET.SubElement(actuator,'velocity',name=name,joint=name,kv='60',ctrlrange='-.5 .5',forcerange=f'{-effort} {effort}')
     ET.SubElement(ET.SubElement(model,'keyframe'),'key',name='home',qpos='0 0 0 0',ctrl='0 0 0 0')
     ET.indent(model,space='  ')
-    ET.ElementTree(model).write(HERE/'assets/right_write.xml',encoding='unicode',xml_declaration=True)
+    ET.ElementTree(model).write(ASSETS/'right_write.xml',encoding='unicode',xml_declaration=True)
 
 
 if __name__=='__main__':main()
