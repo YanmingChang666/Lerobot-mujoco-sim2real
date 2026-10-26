@@ -95,7 +95,7 @@ class RobotSpec:
             rotation_deg=float(defaults.get("rotation_deg", 0.)),
             pen_yaw_deg=float(defaults.get("pen_yaw_deg", 0.)),
             approach_seconds=float(defaults.get("approach_seconds", 5.)),
-            ik_mode=mode, seeds=[list(map(float, s)) for s in ik.get("seeds", [])],
+            ik_mode=mode, seeds=[list(map(float, s)) for s in (ik.get("seeds") or [])],
             random_seeds=int(ik.get("random_seeds", 300)),
             continuity_weight=float(ik["continuity_weight"]) if "continuity_weight" in ik else None,
             overrides=dict(raw.get("overrides") or {}), build=raw.get("build"),
