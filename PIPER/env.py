@@ -4,6 +4,8 @@ from pathlib import Path
 import mujoco
 import numpy as np
 
+from .scene import load_model, place_floor
+
 HERE = Path(__file__).resolve().parent
 MODEL = HERE.parent / "robots/piper/assets/piper.xml"
 REFERENCE = HERE / "data/reference.npz"
@@ -13,7 +15,8 @@ MAX_SPEED = 0.5
 
 class PiperEnv:
     def __init__(self, xml_path=MODEL, joint_names=None):
-        self.model = mujoco.MjModel.from_xml_path(str(xml_path))
+        # Blue sky and grid floor are display-only; dynamics match the plain XML.
+        self.model, self._floor_lowest = load_model(xml_path)
         self.data = mujoco.MjData(self.model)
         self.joint_names = joint_names or [f"joint{i}" for i in range(1, 7)]
         joints = [self.model.joint(name) for name in self.joint_names]
@@ -45,6 +48,10 @@ class PiperEnv:
         if not np.isfinite(state).all():
             raise RuntimeError("Non-finite simulation state")
         return state
+
+    def place_floor(self, paper_height):
+        """Keep an added floor just under the paper when the paper is moved."""
+        place_floor(self.model, self._floor_lowest, paper_height)
 
     def close(self):
         pass

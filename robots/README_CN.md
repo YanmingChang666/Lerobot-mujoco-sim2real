@@ -105,6 +105,15 @@ python -m writing --robot g1_right --text 二 --mode mpc --hold \
   --checkpoint results/G1RightWriting/g1_demo/DBKN/best_model.pt
 ```
 
+## 显示背景
+
+所有机器人加载时统一加上蓝色渐变天空和蓝色网格地面（[PIPER/scene.py](../PIPER/scene.py)），模型文件本身不改，
+所以已训练权重的模型校验不受影响；地面不参与碰撞，运动结果与不加背景时完全相同。
+
+- 模型里已有地面（`type="plane"` 的 geom）：只换成网格材质，位置不变。
+- 没有地面：自动加一块，高度取“机器人最低点”和“纸面”中较低者再往下 4 mm，不会穿过机身。
+  命令行改了 `--height` 时，地面跟着纸面调整。
+
 ## 生成的模型包含什么
 
 - 只有 `joints` 列出的关节能动；其余关节（腿、腰、另一只手臂、手指）固定在 0

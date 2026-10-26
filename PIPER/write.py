@@ -170,6 +170,8 @@ def main(*, env_factory=PiperEnv, planner=plan, here=HERE, reference=REFERENCE,
     paper.quat[:] = [np.cos(half_angle), 0, 0, np.sin(half_angle)]
     paper.pos[:] = [*args.center, args.height-.002]
     paper.size[:2] = [max(.13, args.size*(1 if args.text.isascii() else len(args.text))*.7), max(.13, args.size*.7)]
+    if hasattr(env, "place_floor"):
+        env.place_floor(args.height)
     full_reference = np.vstack([approach_xyz, xyz[1:]])
     full_down = np.r_[np.zeros(len(approach_xyz), dtype=bool), down[1:]]
     display_actual = [state[:3]]
