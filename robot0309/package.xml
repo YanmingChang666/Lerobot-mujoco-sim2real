@@ -1,0 +1,50 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>robot0309</name>
+  <version>0.0.0</version>
+  <description>Robot description package for dual arm panda system with Gazebo support</description>
+  <maintainer email="wusiala@todo.todo">wusiala</maintainer>
+  <license>Apache-2.0</license>
+
+  <!-- 编译工具 -->
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <!-- ========================================================== -->
+  <!-- 运行时依赖 (Execution Dependencies) -->
+  <!-- 这些是运行 launch 文件和加载模型所必须的 -->
+  <!-- ========================================================== -->
+
+  <!-- 1. 基础 ROS 2 启动与状态发布 -->
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>robot_state_publisher</exec_depend>
+  <exec_depend>xacro</exec_depend>
+  
+  <!-- 2. Gazebo 仿真环境 -->
+  <exec_depend>gazebo_ros</exec_depend>
+  <exec_depend>gazebo_ros_pkgs</exec_depend>
+  
+  <!-- 3. ROS 2 Control 与 Gazebo 的桥梁 -->
+  <exec_depend>ros2_control</exec_depend>
+  <exec_depend>ros2_controllers</exec_depend> <!-- 包含 JointTrajectoryController 等 -->
+  <exec_depend>controller_manager</exec_depend> <!-- 用于 spawner -->
+  <exec_depend>gazebo_ros2_control</exec_depend> <!-- 关键插件 -->
+
+  <!-- 4. 项目内部依赖 -->
+  <!-- 必须包含 frank_description，因为你的 urdf 引用了它的 mesh 文件 -->
+  <exec_depend>franka_description</exec_depend>
+  <!-- 必须包含 config 包，因为 launch 文件中使用了 $(find robot0309_moveit_config) -->
+  <exec_depend>robot0309_moveit_config</exec_depend>
+
+  <!-- ========================================================== -->
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+    <!-- 这一行确保其他包可以通过 gazebo_ros 的路径找到此包的模型资源 -->
+    <gazebo_ros gazebo_model_path="${prefix}/.."/>
+  </export>
+</package>

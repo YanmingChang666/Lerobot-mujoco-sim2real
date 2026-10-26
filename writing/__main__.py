@@ -52,7 +52,8 @@ def main(argv=None):
                 camera_distance=spec.camera_distance, camera_height=spec.camera_height,
                 output_dir=spec.output, hanzi_data=ROOT.parent / "hanzi-writer-data/data",
                 argv=rest, prog=f"python -m writing --robot {spec.name}", robot_name=spec.name,
-                rotation_deg=spec.rotation_deg, pen_yaw_deg=spec.pen_yaw_deg)
+                rotation_deg=spec.rotation_deg, pen_yaw_deg=spec.pen_yaw_deg,
+                approach_seconds=spec.approach_seconds)
 
 
 if __name__ == "__main__":

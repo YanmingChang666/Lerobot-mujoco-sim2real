@@ -89,7 +89,7 @@ def plot_result(path, reference, actual, down):
 def main(*, env_factory=PiperEnv, planner=plan, here=HERE, reference=REFERENCE,
          model_file=None, center=(.30, 0), height=0., home_deg=HOME_DEG, metadata_name="piper_data.json", camera_distance=1.1, camera_height=None,
          output_dir=None, hanzi_data=None, argv=None, prog=None, robot_name=None,
-         rotation_deg=0., pen_yaw_deg=0.):
+         rotation_deg=0., pen_yaw_deg=0., approach_seconds=5.):
     model_file = Path(model_file or here / "assets/piper.xml")
     udim, xdim = len(home_deg), len(home_deg)+3
     parser = argparse.ArgumentParser(prog=prog, description=f"{robot_name or here.name} Chinese/English writing simulation")
@@ -111,7 +111,7 @@ def main(*, env_factory=PiperEnv, planner=plan, here=HERE, reference=REFERENCE,
     parser.add_argument("--home-deg", type=float, nargs=udim, default=home_deg,
                         metavar="DEG",
                         help="Initial joint positions in degrees (default: all zero)")
-    parser.add_argument("--approach-seconds", type=float, default=5., help="Home-to-first-stroke-above duration")
+    parser.add_argument("--approach-seconds", type=float, default=approach_seconds, help="Home-to-first-stroke-above duration")
     parser.add_argument("--start-hold", type=float, default=1., help="Display initial pose for this many seconds (GUI only)")
     parser.add_argument("--approach-only", action="store_true", help="Stop above the first stroke after startup; do not write")
     parser.add_argument("--checkpoint", type=Path)

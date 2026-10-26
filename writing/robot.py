@@ -45,6 +45,7 @@ class RobotSpec:
     camera_height: float = None
     rotation_deg: float = 0.
     pen_yaw_deg: float = 0.
+    approach_seconds: float = 5.
     ik_mode: str = "auto"
     seeds: list = field(default_factory=list)
     random_seeds: int = 300
@@ -70,7 +71,7 @@ class RobotSpec:
         defaults = raw.get("write_defaults") or {}
         ik = raw.get("ik") or {}
         unknown = set(defaults) - {"center", "height", "home_deg", "camera_distance", "camera_height",
-                                 "rotation_deg", "pen_yaw_deg"}
+                                 "rotation_deg", "pen_yaw_deg", "approach_seconds"}
         unknown |= set(ik) - {"mode", "seeds", "random_seeds", "continuity_weight"}
         unknown |= set(raw.get("overrides") or {}) - {"env_class", "planner", "data_generator"}
         if unknown:
@@ -93,6 +94,7 @@ class RobotSpec:
             camera_height=defaults.get("camera_height"),
             rotation_deg=float(defaults.get("rotation_deg", 0.)),
             pen_yaw_deg=float(defaults.get("pen_yaw_deg", 0.)),
+            approach_seconds=float(defaults.get("approach_seconds", 5.)),
             ik_mode=mode, seeds=[list(map(float, s)) for s in ik.get("seeds", [])],
             random_seeds=int(ik.get("random_seeds", 300)),
             continuity_weight=float(ik["continuity_weight"]) if "continuity_weight" in ik else None,

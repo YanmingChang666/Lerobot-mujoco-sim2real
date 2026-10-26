@@ -1,0 +1,1 @@
+controller_joint_names: ['', 'lfu_joint', 'lfd_joint', 'lbu_joint', 'lbd_joint', 'rfu_joint', 'rfd_joint', 'rbu_joint', 'rbd_joint', 'rl_joint', 'rr51_1_joint', 'rr51_2_joint', 'rr51_3_joint', 'rr51_4_joint', 'rr51_5_joint', 'rr51_6_joint', 'lr52_1_joint', 'lr52_2_joint', 'lr52_3_joint', 'lr52_4_joint', 'lr52_5_joint', 'lr52_6_joint', 'ca53_1_joint', ]

@@ -105,6 +105,7 @@ python -m writing --robot g1_right --text 二 --mode mpc --hold \
 | `write_defaults.center` / `height` | | `[0.30, 0]` / `0` | 纸面位置（m） |
 | `write_defaults.home_deg` | | 全 0 | 初始关节角（度） |
 | `write_defaults.rotation_deg` / `pen_yaw_deg` | | 0 | 命令行 `--rotation-deg` / `--pen-yaw-deg` 的默认值 |
+| `write_defaults.approach_seconds` | | 5 | 进场时长；初始姿态离书写姿态很远时加大 |
 | `write_defaults.camera_distance` / `camera_height` | | 1.1 / 纸面+0.1 | 窗口视角 |
 | `ik.mode` | | `auto` | 见上表 |
 | `ik.seeds` | | 无 | IK 起始姿态（rad），按顺序尝试 |
@@ -115,8 +116,9 @@ python -m writing --robot g1_right --text 二 --mode mpc --hold \
 | `build.base_pos` | | URDF 原点 | 基座位置 |
 | `build.fixed_joints` | | 全部 0 | 非书写关节的固定角度，`{关节名: 度}` |
 | `build.package_dirs` | | 自动向上查找 | `package://` 找不到时手动指定 `{包名: 路径}` |
-| `build.copy_meshes` | | true | 把网格复制到模型旁边 |
-| `build.kv` / `default_force` | | 60 / 40 | 速度执行器增益 / URDF 没写 effort 时的力矩上限 |
+| `build.copy_meshes` | | true | 把网格复制到模型旁边；超过 20 万面的 STL 会自动简化 |
+| `build.skip_missing_meshes` | | false | 找不到的网格跳过（该零件不显示），不报错 |
+| `build.kv` / `default_force` | | 60 / 40 | 速度执行器增益（手臂很重时加大，如 robot0309 用 800） / URDF 没写 effort 时的力矩上限 |
 | `build.damping` / `armature` | | 0.2 / 0.02 | 书写关节阻尼 / 转子惯量 |
 | `build.floor_height` | | 无地面 | 地面高度 |
 | `overrides.env_class` / `planner` / `data_generator` | | 通用实现 | `模块:名字`，用自己的类替换通用实现（原有 4 台机器人用它保持原行为） |

@@ -24,34 +24,49 @@ from PIPER.env import MAX_SPEED
 from .robot import _path, load_robot
 
 MESH_SUFFIXES = {".stl", ".obj", ".msh"}
-BUILD_KEYS = {"urdf", "package_dirs", "copy_meshes", "base_pos", "fixed_joints", "pen",
+BUILD_KEYS = {"urdf", "package_dirs", "copy_meshes", "skip_missing_meshes", "base_pos", "fixed_joints", "pen",
               "kv", "default_force", "damping", "armature", "floor_height"}
 PEN_KEYS = {"link", "mount", "direction", "length"}
 
 
 # ---------------------------------------------------------------- URDF helpers
-def find_package(name, start, package_dirs):
+def package_candidates(name, start, package_dirs):
+    """Possible roots of ROS package `name`, most likely first."""
     if name in package_dirs:
-        return _path(package_dirs[name])
+        yield _path(package_dirs[name])
+        return
     for directory in [start, *start.parents]:
-        if directory.name == name:
-            return directory
-        if (directory / name).is_dir():
-            return directory / name
         manifest = directory / "package.xml"
         if manifest.exists():
             tag = ET.parse(manifest).getroot().find("name")
             if tag is not None and tag.text and tag.text.strip() == name:
-                return directory
-    raise FileNotFoundError(f"Cannot locate ROS package '{name}' above {start}; "
-                            f"set build.package_dirs: {{{name}: /path/to/{name}}}")
+                yield directory
+        if directory.name == name:
+            yield directory
+        if (directory / name).is_dir():
+            yield directory / name
+
+
+def find_package_file(name, relative, start, package_dirs):
+    """First candidate package root that actually contains `relative` (a same-named
+    folder elsewhere, e.g. urdf/<name>/ with USD files, is skipped)."""
+    candidates = list(dict.fromkeys(package_candidates(name, start, package_dirs)))
+    for root in candidates:
+        path = root / relative
+        if path.exists() or any(path.with_suffix(s).exists() for s in (".stl", ".STL", ".obj", ".OBJ")):
+            return path
+    if not candidates:
+        raise FileNotFoundError(f"Cannot locate ROS package '{name}' above {start}; "
+                                f"set build.package_dirs: {{{name}: /path/to/{name}}}")
+    raise FileNotFoundError(f"Mesh '{relative}' not found in package '{name}' (looked in "
+                            f"{', '.join(map(str, candidates))}); set build.package_dirs if it is elsewhere")
 
 
 def resolve_mesh(filename, urdf_dir, package_dirs):
     """Return a MuJoCo-loadable mesh path, or None if only an unsupported format exists."""
     if filename.startswith("package://"):
         package, _, relative = filename[len("package://"):].partition("/")
-        path = find_package(package, urdf_dir, package_dirs) / relative
+        path = find_package_file(package, relative, urdf_dir, package_dirs)
     elif filename.startswith("file://"):
         path = Path(filename[len("file://"):])
     else:
@@ -87,7 +102,7 @@ def inspect_urdf(urdf):
     print("Leaf links (candidates for build.pen.link):", ", ".join(leaves))
 
 
-def prepare_urdf(urdf, mesh_dir, package_dirs, copy_meshes):
+def prepare_urdf(urdf, mesh_dir, package_dirs, copy_meshes, skip_missing=False):
     """Rewrite mesh paths and drop duplicate collision geometry; return the edited tree."""
     tree = ET.parse(urdf)
     root = tree.getroot()
@@ -103,12 +118,24 @@ def prepare_urdf(urdf, mesh_dir, package_dirs, copy_meshes):
             mesh = element.find("geometry/mesh")
             if mesh is None:
                 continue
-            source = resolve_mesh(mesh.get("filename"), urdf.parent, package_dirs)
+            try:
+                source = resolve_mesh(mesh.get("filename"), urdf.parent, package_dirs)
+            except FileNotFoundError as error:
+                if not skip_missing:
+                    raise FileNotFoundError(f"{error}\n(or set build.skip_missing_meshes: true "
+                                            "to build without this part's appearance)") from None
+                print(f"  warning: link '{link.get('name')}' mesh {mesh.get('filename')} not found; "
+                      "shown without it")
+                link.remove(element)
+                continue
             if source is None:
                 print(f"  warning: link '{link.get('name')}' mesh {mesh.get('filename')} has no STL/OBJ; skipped")
                 link.remove(element)
                 continue
             if not copy_meshes:
+                if (binary_stl_faces(source) or 0) > MAX_FACES:
+                    raise ValueError(f"{source.name} has more than {MAX_FACES} triangles; "
+                                     "set build.copy_meshes: true so it can be simplified")
                 mesh.set("filename", str(source.resolve()))
                 continue
             key = source.resolve()
@@ -117,7 +144,7 @@ def prepare_urdf(urdf, mesh_dir, package_dirs, copy_meshes):
                 if name in used.values():
                     name = f"{len(used)}_{name}"
                 used[key] = name
-                shutil.copy2(source, mesh_dir / name)
+                copy_mesh(source, mesh_dir / name)
             mesh.set("filename", used[key])
     for old in root.findall("mujoco"):
         root.remove(old)
@@ -125,6 +152,56 @@ def prepare_urdf(urdf, mesh_dir, package_dirs, copy_meshes):
     ET.SubElement(extension, "compiler", meshdir=str(mesh_dir), strippath="false", discardvisual="false",
                   fusestatic="false", balanceinertia="true", boundmass="1e-4", boundinertia="1e-7")
     return tree
+
+
+# ---------------------------------------------------------------- large meshes
+MAX_FACES = 200000  # MuJoCo's per-mesh STL limit
+_STL_FACE = np.dtype([("normal", "<f4", 3), ("vertices", "<f4", (3, 3)), ("attribute", "<u2")])
+
+
+def binary_stl_faces(path):
+    """Triangle count of a binary STL, or None for other formats (ASCII STL, OBJ)."""
+    if path.suffix.lower() != ".stl" or path.stat().st_size < 84:
+        return None
+    with open(path, "rb") as f:
+        f.seek(80)
+        count = int.from_bytes(f.read(4), "little")
+    return count if path.stat().st_size == 84 + 50 * count else None
+
+
+def simplify_stl(source, destination, max_faces=MAX_FACES):
+    """Vertex-clustering decimation for display meshes: merge vertices on a grid that
+    grows until the mesh has at most max_faces triangles. Returns (before, after)."""
+    triangles = np.fromfile(source, dtype=_STL_FACE, offset=84)["vertices"].astype(np.float64)
+    vertices = triangles.reshape(-1, 3)
+    cell = np.ptp(vertices, axis=0).max() / 1024
+    while True:
+        keys, inverse = np.unique(np.floor(vertices / cell).astype(np.int64), axis=0, return_inverse=True)
+        inverse = inverse.ravel()
+        centers = np.stack([np.bincount(inverse, vertices[:, k]) for k in range(3)], 1)
+        centers /= np.bincount(inverse)[:, None]
+        faces = inverse.reshape(-1, 3)
+        faces = faces[(faces[:, 0] != faces[:, 1]) & (faces[:, 1] != faces[:, 2]) & (faces[:, 0] != faces[:, 2])]
+        faces = faces[np.unique(np.sort(faces, axis=1), axis=0, return_index=True)[1]]
+        if len(faces) <= max_faces:
+            break
+        cell *= 1.3
+    out = np.zeros(len(faces), dtype=_STL_FACE)
+    out["vertices"] = centers[faces]
+    with open(destination, "wb") as f:
+        f.write(b"simplified by writing.build_model".ljust(80, b" "))
+        f.write(len(faces).to_bytes(4, "little"))
+        out.tofile(f)
+    return len(triangles), len(faces)
+
+
+def copy_mesh(source, destination):
+    faces = binary_stl_faces(source)
+    if faces is not None and faces > MAX_FACES:
+        before, after = simplify_stl(source, destination)
+        print(f"  {source.name}: {before} triangles > MuJoCo limit {MAX_FACES}; simplified to {after} (display only)")
+    else:
+        shutil.copy2(source, destination)
 
 
 # ---------------------------------------------------------------- MJCF edits
@@ -196,7 +273,8 @@ def build(spec, log=print):
     log(f"Importing {urdf}")
     with tempfile.TemporaryDirectory() as directory:
         work_mesh_dir = mesh_dir if copy_meshes else Path(directory)
-        tree = prepare_urdf(urdf, work_mesh_dir, cfg.get("package_dirs") or {}, copy_meshes)
+        tree = prepare_urdf(urdf, work_mesh_dir, cfg.get("package_dirs") or {}, copy_meshes,
+                            cfg.get("skip_missing_meshes", False))
         temp_urdf = Path(directory) / "robot.urdf"
         tree.write(temp_urdf, encoding="unicode")
         imported = mujoco.MjModel.from_xml_path(str(temp_urdf))

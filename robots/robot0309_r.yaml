@@ -1,0 +1,24 @@
+# robot0309 整机（轮腿底盘 + 升降 + 头 + 双臂），只用右臂 rr51_1..6（6 轴）书写，其余关节固定在 0。
+# 生成模型：python -m writing.build_model --robot robot0309_r
+name: robot0309_r
+description: robot0309 full model, right arm rr51 6-DoF (others fixed)
+train_env: Robot0309RWriting
+model: robots/robot0309_r/assets/robot0309_r_write.xml
+joints: [rr51_1_joint, rr51_2_joint, rr51_3_joint, rr51_4_joint, rr51_5_joint, rr51_6_joint]
+write_defaults:
+  center: [0.70, 0.30]
+  height: 0.90
+  approach_seconds: 6        # URDF 零位手臂伸直，到书写姿态要转约 120°，5 秒不够
+  camera_distance: 2.5
+ik:
+  seeds:
+    - [1.491933, -1.026239, 2.149277, 1.492146, 0.614997, -1.43322]
+build:
+  urdf: robot0309/urdf/robot0309_with_gripper.urdf
+  kv: 800                      # 手臂很重（肩关节惯量约 6.5 kg·m²），速度环增益要比轻型臂大
+  skip_missing_meshes: true    # 夹爪网格 package://Servogripper1010 不在本机，只显示笔
+  pen:
+    link: sg_base_link          # 夹爪基座坐标系，手指沿 -Z 伸出约 0.28 m
+    mount: [0, -0.0176, -0.27]  # 两指之间夹笔
+    direction: [0, 0, -1]
+    length: 0.08

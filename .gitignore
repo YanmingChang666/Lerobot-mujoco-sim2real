@@ -78,3 +78,8 @@ core.[0-9]*
 
 # Writing models generated from URDF by python -m writing.build_model (meshes are copies)
 /robots/*/assets/
+
+# robot0309: Isaac USD exports (>100 MB each, not used for writing) and export artifacts
+/robot0309/urdf/*/
+/robot0309/export.log
+/robot0309/.thumbs/

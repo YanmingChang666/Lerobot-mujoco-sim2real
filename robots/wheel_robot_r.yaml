@@ -1,0 +1,22 @@
+# 轮式机器人完整模型（底盘 + 升降 + 腰 + 双臂），只用右臂 7 轴书写，其余关节固定在 0。
+# 生成模型：python -m writing.build_model --robot wheel_robot_r
+name: wheel_robot_r
+description: Wheel robot full model, right arm 7-DoF (others fixed)
+train_env: WheelRobotRWriting
+model: robots/wheel_robot_r/assets/wheel_robot_r_write.xml
+joints: [Link1_R_joint, Link2_R_joint, Link3_R_joint, Link4_R_joint, Link5_R_joint, Link6_R_joint, Link7_R_joint]
+write_defaults:
+  center: [0.49, -0.40]      # 与单臂 WheelArmR 相对右肩的位置相同（整机里肩高 0.91 m）
+  height: 0.66
+  camera_distance: 1.8
+ik:
+  seeds:
+    - [0.92554644, -0.41913206, -1.33945726, -1.77813039, -0.69048797, -0.98614513, 0.53061671]
+build:
+  urdf: "wheel_robot/wheel robot.urdf"
+  kv: 80
+  pen:
+    link: Link7_R            # 与原 WheelArmR 书写模型相同的握笔方式
+    mount: [0, -0.04, 0]
+    direction: [0, -1, 0]
+    length: 0.12
