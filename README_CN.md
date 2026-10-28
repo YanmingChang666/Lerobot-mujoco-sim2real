@@ -9,7 +9,7 @@
 🆕 **通用书写框架**：新增机器人只需写一个 YAML（[robots/README_CN.md](robots/README_CN.md)），
 从 URDF 自动生成书写模型、按关节数自动选择 IK 模式、自动搜索 IK 起始姿态。
 统一入口 `python -m writing --robot <名字> --text 永 --hold`，`python -m writing --list` 查看全部机器人；
-已用 Unitree G1 右臂（7 轴）和 SO-ARM101（5 轴）验证。
+**名字 ↔ 目录对照**见 [docs/机器人目录框架.md](docs/机器人目录框架.md)。
 
 新增 [x02cTpose 四关节右臂书写](x02cTpose/README_CN.md)：T-pose 初始模型、汉字与英文、5 秒进场和独立 DBKN/MPC；腕部固定，采用允许笔倾斜的位置跟踪。
 
@@ -36,26 +36,15 @@
 ## 📁 项目结构
 
 ```
-├── SOARM101/                 # MuJoCo 仿真环境
-│   ├── SOARM101_Env.py       # Gymnasium 风格环境封装
-│   ├── SOARM101_DataCollection.py  # 数据采集脚本
-│   └── (模型在 robots/so101/SO101/)
-├── robots/                   # 全部机器人模型（URDF/MJCF/网格）与书写配置 *.yaml
-├── writing/                  # 通用书写框架：python -m writing --robot <名字>
+├── writing/                  # 通用书写入口：python -m writing --robot <名字>
+├── robots/                   # ★ 按机器人名：*.yaml + <名字>/{source,assets,outputs}
+├── PIPER/ WheelArmR/ X02/ x02cTpose/ SOARM101/
+│                             # 旧实现代码包（YAML overrides 仍引用）；模型已迁到 robots/
 ├── models/                   # Koopman 网络实现
-│   ├── base_model.py         # KoopmanNet 基类
-│   ├── KoopmanBase.py        # DKUC/DBKN 线性/双线性模型
-│   ├── InvertKoopman.py      # IKN/IBKN 可逆网络模型
-│   └── losses.py             # 损失函数定义
 ├── control/                  # MPC 控制模块
-│   ├── MPC_Controler.py      # MPC 控制器实现
-│   ├── TrajectoryGenerator.py # 轨迹生成器
-│   └── config.py             # 实验配置管理
 ├── lerobot_sim2real/         # Sim2Real 通信模块
-│   ├── so101_mujoco.py       # MuJoCo 端 ZMQ 发布者
-│   └── so101_real.py         # 真机端 ZMQ 订阅者
-├── args.py                   # 命令行参数配置
-└── train.py                  # 训练/测试入口
+├── args.py / train.py        # 训练入口
+└── docs/机器人目录框架.md     # 名字 ↔ 文件夹对照表
 ```
 
 ## 🛠️ 环境搭建

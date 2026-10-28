@@ -1,0 +1,27 @@
+# Yahboom Dofbot 五轴桌面臂。5 个关节走 pen_axis：笔尖竖直朝下，绕笔转角由 joint5 自由决定。
+# 源模型：robots/dofbot/source/dofbot_info/（URDF + meshes，package://dofbot_info）
+# 修改 build: 后重新生成：python -m writing.build_model --robot dofbot
+# 书写：python -m writing --robot dofbot --text 二 --hold
+name: dofbot
+description: Yahboom Dofbot 5-DoF desktop arm, pen on the gripper side (generic, YAML only)
+train_env: DofbotWriting
+model: robots/dofbot/assets/dofbot_write.xml
+joints: [joint1, joint2, joint3, joint4, joint5]
+write_defaults:
+  center: [0.0, 0.26]      # 手臂前伸（+Y）能到的桌面；底座板在 -Y
+  height: 0.0
+  camera_distance: 0.7
+  approach_seconds: 6
+ik:
+  seeds:
+    - [0.062316, -1.035513, -0.767897, 0.234979, -0.000676]  # 默认「二」、8 cm
+build:
+  urdf: robots/dofbot/source/dofbot_info/urdf/dofbot.urdf
+  copy_meshes: false
+  floor_height: -0.004
+  kv: 20
+  pen:
+    link: link5              # 夹爪；手指沿本体系 +Z
+    mount: [0, 0.02, 0.05]   # 指侧握笔。前伸时本体系 +Y 朝下，笔才能落到桌面
+    direction: [0, 1, 0]
+    length: 0.08

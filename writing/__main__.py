@@ -7,7 +7,12 @@
 Every option after --robot is the same as python -m X02.write --help.
 """
 import argparse
+import os
 import sys
+
+# Offscreen recording / headless needs EGL (or OSMesa) before MuJoCo loads GL.
+if "MUJOCO_GL" not in os.environ and ("--headless" in sys.argv or "--record" in sys.argv):
+    os.environ["MUJOCO_GL"] = "egl"
 
 from .robot import ROOT, all_robots, load_robot
 

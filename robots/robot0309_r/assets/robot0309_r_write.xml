@@ -112,8 +112,8 @@
                         <body name="sg_SG30_Link" pos="-1.4482e-05 -0.017637 -0.281" gravcomp="1">
                           <inertial pos="-0.036746 -0.0032098 -0.016909" quat="0.977965 0.127748 -0.0395425 0.160315" mass="0.087583" diaginertia="1.91441e-05 1.6463e-05 6.13511e-06" />
                         </body>
-                        <geom name="pen" type="capsule" fromto="0 -0.0176 -0.25 0 -0.0176 -0.35" size=".003" mass=".01" rgba=".12 .12 .12 1" contype="0" conaffinity="0" />
-                        <site name="pen_tip" pos="0 -0.0176 -0.35" quat="0 0 1 0" size=".003" rgba="0 0 1 1" />
+                        <geom name="pen" type="capsule" fromto="0 -0.0176 0.02 0 -0.0176 -0.04" size=".003" mass=".01" rgba=".12 .12 .12 1" contype="0" conaffinity="0" />
+                        <site name="pen_tip" pos="0 -0.0176 -0.04" quat="0 0 1 0" size=".003" rgba="0 0 1 1" />
                       </body>
                     </body>
                   </body>

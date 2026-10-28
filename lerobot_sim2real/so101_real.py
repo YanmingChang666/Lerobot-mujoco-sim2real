@@ -35,7 +35,8 @@ JOINT_NAMES = [
 ZMQ_IP = "127.0.0.1"
 ZMQ_PORT = "5555"  # commands: subscribed here (target joint degrees)
 STATE_ZMQ_PORT = "5556"  # state: published here (current joint degrees), for ROS2 /joint_states feedback
-REAL_ROBOT_PORT = "/dev/ttyACM0"
+# Unused by this script; the port actually opened is set in real_robot.py.
+REAL_ROBOT_PORT = "/dev/serial/by-id/usb-1a86_USB_Single_Serial_5A7A054769-if00"
 
 
 def main():

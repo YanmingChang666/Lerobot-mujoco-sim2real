@@ -20,6 +20,6 @@ build:
   skip_missing_meshes: true    # 夹爪网格 package://Servogripper1010 不在本机，只显示笔
   pen:
     link: sg_base_link          # 夹爪基座坐标系，手指沿 -Z 伸出约 0.28 m
-    mount: [0, -0.0176, -0.27]  # 两指之间夹笔
+    mount: [0, -0.0176, -0.0]  # 两指之间夹笔（夹持点）；改 Z 可上下移动握笔位置
     direction: [0, 0, -1]
-    length: 0.08
+    length: 0.04                # 夹持点到笔尖；原 0.08 视觉上偏长，缩短后写字时夹爪更贴纸面

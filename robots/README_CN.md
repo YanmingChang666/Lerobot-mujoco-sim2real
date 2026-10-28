@@ -3,6 +3,8 @@
 每个 YAML 文件描述一台书写机器人。新增机器人只需要写一个 YAML，不用写 Python 代码，
 也不用改 `train.py` / `args.py`。
 
+**框架总览（名字 ↔ 目录）见 [docs/机器人目录框架.md](../docs/机器人目录框架.md)。**
+
 ```bash
 python -m writing --list                                   # 列出所有机器人
 python -m writing --robot g1_right --text 永 --hold         # 书写，参数与 python -m X02.write 相同
@@ -12,9 +14,25 @@ python -m writing --robot g1_right --help
 原来的入口 `python -m PIPER.write`、`WheelArmR.write`、`X02.write`、`x02cTpose.write` 保持不变，
 已训练的权重照常可用。
 
+## 名字对照
+
+| `--robot` | 配置 | 模型目录 | 说明 |
+|---|---|---|---|
+| `piper` | [piper.yaml](piper.yaml) | [piper/](piper/) | AgileX Piper 六轴 |
+| `wheelarm_r` | [wheelarm_r.yaml](wheelarm_r.yaml) | [wheelarm_r/](wheelarm_r/) | WheelArm 单独右臂 |
+| `x02` | [x02.yaml](x02.yaml) | [x02/](x02/) | X02 上身右臂七轴 |
+| `x02c_tpose` | [x02c_tpose.yaml](x02c_tpose.yaml) | [x02c_tpose/](x02c_tpose/) | x02c T-pose 右臂四轴 |
+| `so101` | [so101.yaml](so101.yaml) | [so101/](so101/) | SO-ARM101 |
+| `g1_right` | [g1_right.yaml](g1_right.yaml) | [g1_right/](g1_right/) | Unitree G1 右臂 |
+| `wheel_robot_r` | [wheel_robot_r.yaml](wheel_robot_r.yaml) | [wheel_robot_r/](wheel_robot_r/) | 轮式整机右臂 |
+| `robot0309_r` | [robot0309_r.yaml](robot0309_r.yaml) | [robot0309_r/](robot0309_r/) | robot0309 右臂 |
+| `x03_right` | [x03_right.yaml](x03_right.yaml) | [x03_right/](x03_right/) | x3f2 28DoF 右臂 |
+| `dofbot` | [dofbot.yaml](dofbot.yaml) | [dofbot/](dofbot/) | Yahboom Dofbot 五轴桌面臂 |
+
 ## 目录结构
 
 所有机器人的模型文件（URDF、MJCF、网格）都在本目录下，随仓库提供，克隆后即可运行，不需要先生成模型。
+约定：`robots/<名字>.yaml` + `robots/<名字>/{source,assets,outputs}/`。
 
 ```text
 robots/
@@ -34,9 +52,15 @@ robots/
 ├── wheel_robot_r/
 │   ├── source/                      轮式机器人整机 URDF + meshes/
 │   └── assets/wheel_robot_r_write.xml
-└── robot0309_r/
-    ├── source/robot0309/            robot0309 ROS 包：URDF、meshes/、launch/、config/
-    └── assets/                      书写模型 + 简化后的底座网格（原底座超过 MuJoCo 面数上限）
+├── robot0309_r/
+│   ├── source/robot0309/            robot0309 ROS 包：URDF、meshes/、launch/、config/
+│   └── assets/                      书写模型 + 简化后的底座网格（原底座超过 MuJoCo 面数上限）
+├── x03_right/
+│   ├── source/                      x3f2_28dof.urdf + meshes/
+│   └── assets/x03_right_write.xml   书写模型（右臂 7 轴）
+└── dofbot/
+    ├── source/dofbot_info/          Dofbot ROS 包：dofbot.urdf、meshes/、package.xml
+    └── assets/dofbot_write.xml      书写模型（5 轴，笔装在夹爪侧向）
 ```
 
 - `source/` 是原始模型，`assets/` 是书写用的 MJCF。由 YAML 生成的模型通过相对路径直接引用
@@ -44,6 +68,8 @@ robots/
 - 运行时生成的数据不在这里，也不入库：训练参考与数据缓存在 YAML 的 `reference` / `cache_dir`，
   书写结果在 `output`（新机器人默认是 `robots/<名字>/data`、`robots/<名字>/outputs`）。
 - robot0309 的 Isaac USD 导出文件（每个 172 MB）超过 GitHub 上限，不入库，见 `.gitignore`。
+- 仓库根目录的 `robot0309/`、`unitree_description/` 是遗留拷贝；正式源分别在
+  `robots/robot0309_r/source/`、`robots/g1_right/source/`。
 
 ## 新增一台机器人（以 G1 右臂为例）
 

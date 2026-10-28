@@ -1,0 +1,31 @@
+# x3f2（F2）28 自由度人形，只用右臂 7 轴书写，腿/腰/头/左臂固定在 0。
+# 源模型：robots/x03_right/source/x3f2_28dof.urdf + meshes/
+# 修改 build: 后重新生成：python -m writing.build_model --robot x03_right
+# 书写：python -m writing --robot x03_right --text 二 --hold
+name: x03_right
+description: x3f2 28-DoF humanoid, right arm 7-DoF (generic, YAML only)
+train_env: X03RightWriting
+model: robots/x03_right/assets/x03_right_write.xml
+joints: [right_shoulder_pitch_joint, right_shoulder_roll_joint, right_shoulder_yaw_joint,
+         right_elbow_joint, right_wrist_roll_joint, right_wrist_pitch_joint, right_wrist_yaw_joint]
+write_defaults:
+  center: [0.35, -0.20]      # 右臂前方纸面中心（世界坐标，m）
+  height: 0.85               # 桌面高度；肩约 1.27 m，可按观感再调
+  rotation_deg: -90          # 从机器人前方正着读
+  camera_distance: 1.8
+  camera_height: 0.95
+  approach_seconds: 5
+ik:
+  seeds:
+    - [-0.130672, -0.04484, -0.03654, 0.442651, 0.041646, -0.310059, 0.054811]
+build:
+  urdf: robots/x03_right/source/x3f2_28dof.urdf
+  copy_meshes: false
+  base_pos: [0, 0, 0.84]     # 骨盆高度，零位时脚底约贴地
+  floor_height: 0
+  kv: 80
+  pen:
+    link: right_hand_link    # 右手末端
+    mount: [0.08, 0, 0]      # 掌心附近（手沿 +X 伸出）
+    direction: [0, 0, -1]    # 笔尖朝手系 -Z；若 home 打印的 pen axis 不是朝下再改
+    length: 0.10

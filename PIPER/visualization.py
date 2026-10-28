@@ -1,9 +1,34 @@
-"""Shared viewer/offscreen overlay: red reference, green measured tip trail."""
+"""Shared viewer/offscreen overlay: red reference, green measured tip trail, black ink."""
 import mujoco
 import numpy as np
 
 REFERENCE_COLOR = np.array([1., .12, .08, 1.])
 ACTUAL_COLOR = np.array([.05, .9, .15, 1.])
+INK_COLOR = np.array([.05, .05, .05, 1.])
+PAPER_COLOR = np.array([.97, .97, .94, 1.])
+
+
+def _z_rotation_mat(rotation_deg):
+    angle = np.radians(rotation_deg)
+    c, s = np.cos(angle), np.sin(angle)
+    return np.array([[c, -s, 0.], [s, c, 0.], [0., 0., 1.]], dtype=float)
+
+
+def draw_paper_sheet(scene, origin_xy, rotation_deg, half_x, half_y, z, *,
+                     thickness=.002, color=None, append=True):
+    """Draw a finished paper copy (white box) in the viewer overlay."""
+    if not append:
+        scene.ngeom = 0
+    if scene.ngeom >= scene.maxgeom:
+        return
+    color = PAPER_COLOR if color is None else np.asarray(color, dtype=float)
+    geom = scene.geoms[scene.ngeom]
+    mujoco.mjv_initGeom(
+        geom, mujoco.mjtGeom.mjGEOM_BOX,
+        np.array([half_x, half_y, thickness], dtype=float),
+        np.array([origin_xy[0], origin_xy[1], z], dtype=float),
+        _z_rotation_mat(rotation_deg).ravel(), color)
+    scene.ngeom += 1
 
 
 def draw_trajectories(scene, reference, actual, pen_down, *, append=False):
@@ -44,4 +69,34 @@ def draw_trajectories(scene, reference, actual, pen_down, *, append=False):
                            np.zeros(3), np.eye(3).ravel(), color)
         mujoco.mjv_connector(geom, mujoco.mjtGeom.mjGEOM_CAPSULE, .0008,
                             actual[left], actual[right])
+        scene.ngeom += 1
+
+
+def draw_ink(scene, polylines_world, *, color=None, width=.0012, append=True, max_segments=2000):
+    """Draw finished pen-down strokes (black ink on paper). Each polyline is (N, 3)."""
+    if not append:
+        scene.ngeom = 0
+    color = INK_COLOR if color is None else np.asarray(color, dtype=float)
+    budget = scene.maxgeom - scene.ngeom
+    if budget < 1:
+        return
+    segments = []
+    for line in polylines_world:
+        pts = np.asarray(line, dtype=float)
+        if len(pts) < 2:
+            continue
+        for left, right in zip(pts[:-1], pts[1:]):
+            if np.linalg.norm(right - left) < 1e-9:
+                continue
+            segments.append((left, right))
+    if not segments:
+        return
+    if len(segments) > min(budget, max_segments):
+        pick = np.unique(np.linspace(0, len(segments) - 1, min(budget, max_segments)).astype(int))
+        segments = [segments[i] for i in pick]
+    for left, right in segments[:budget]:
+        geom = scene.geoms[scene.ngeom]
+        mujoco.mjv_initGeom(geom, mujoco.mjtGeom.mjGEOM_CAPSULE, np.zeros(3),
+                           np.zeros(3), np.eye(3).ravel(), color)
+        mujoco.mjv_connector(geom, mujoco.mjtGeom.mjGEOM_CAPSULE, width, left, right)
         scene.ngeom += 1

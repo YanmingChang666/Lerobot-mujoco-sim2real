@@ -1,6 +1,14 @@
+from pathlib import Path
+
 from lerobot.robots.robot import Robot
 from lerobot.robots.so_follower.config_so_follower import SO100FollowerConfig, SO101FollowerConfig
 from lerobot.robots.utils import make_robot_from_config
+
+# so101-lab calibrate_leader.py writes <name>.json here. MoveIt drives the follower only.
+FOLLOWER_PORT = "/dev/serial/by-id/usb-1a86_USB_Single_Serial_5A7A054769-if00"
+FOLLOWER_CALIBRATION_DIR = Path(
+    "/home/cym/ROS/Arms/isaac_so_arm101/so101-lab/so101_lab/devices/lerobot/.cache"
+)
 
 
 def create_real_robot(uid: str = "so100") -> Robot:
@@ -27,8 +35,10 @@ def create_real_robot(uid: str = "so100") -> Robot:
         )
     elif uid == "so101":
         robot_config = SO101FollowerConfig(
-            port="/dev/ttyACM0",
-            id="so101_follower",
+            # Follower serial 5A7A054769. Leader is 5A7A057348 / leader_1.json.
+            port=FOLLOWER_PORT,
+            id="follower_1",
+            calibration_dir=FOLLOWER_CALIBRATION_DIR,
             use_degrees=True,
             max_relative_target=10.0,  # degrees per step, safety limit against sudden jumps
             # for phone camera users you can use the commented out setting below
